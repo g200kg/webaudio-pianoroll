@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+<style>
+body{
+}
+#base {
+	background:#88d;
+	position:relative;
+	width:100%;
+	height:500px;
+}
+#proll{
+	position:absolute;
+	left:16px;
+	top:50px;
+}
+#xrange{
+	position:absolute;
+	left:700px;
+	top:400px;
+}
+#xoffset{
+	position:absolute;
+	left:480px;
+	top:400px;
+}
+#yrange{
+	position:absolute;
+	left:850px;
+	top:270px;
+}
+#yoffset{
+	position:absolute;
+	left:850px;
+	top:60px;
+}
+#prollyoff{
+	position:absolute;
+	left:1040px;
+	top:16px;
+}
+#prollyzoom{
+	position:absolute;
+	left:1040px;
+	top:400px;
+}
+.ind{
+	background:#00f;
+	width:64px;
+	height:8px;
+	margin:0;
+	padding:0;
+	display:inline-block;
+}
+.pat{
+	background:#00f;
+	width:64px;
+	height:32px;
+	margin:0;
+	padding:0;
+	display:inline-block;
+}
+</style>
+<script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/webaudio-controls/webaudio-controls.html" >
+<link rel="import" href="webaudio-pianoroll.html" >
+<script>
+timebase=16;
+actx=new AudioContext();
+osc=actx.createOscillator();
+gain=actx.createGain();
+gain.gain.value=0;
+osc.type="sawtooth";
+osc.start();
+osc.connect(gain).connect(actx.destination);
+
+function Callback(ev){
+	osc.detune.setValueAtTime((ev.n-69)*100,ev.t);
+	gain.gain.setTargetAtTime(0.5,ev.t,0.005);
+	gain.gain.setTargetAtTime(0,ev.g,0.1);
+}
+function Play(){
+	document.getElementById("proll").play(actx,Callback);
+}
+function Layout(k){
+	switch(k.id){
+	case "xrange":
+		document.getElementById("proll").xrange=k.value*timebase;
+		break;
+	case "xoffset":
+		document.getElementById("proll").xoffset=k.value*timebase;
+		break;
+	case "yrange":
+		document.getElementById("proll").yrange=k.value;
+		break;
+	case "yoffset":
+		document.getElementById("proll").yoffset=k.value;
+		break;
+	}
+}
+</script>
+</head>
+<body>
+<h1>webaudio-pianoroll Live Demo</h1>
+<hr/>
+<h3><a href="https://github.com/g200kg/webaudio-pianoroll">GitHub Respository</a></h3>
+<h3><a href="./index2.html">Other samples</a></h3>
+<hr/>
+<br/>
+<div id="base">
+<webaudio-pianoroll id="proll"
+ 		width="800" height="320"
+		timebase="16" loop="1"
+		grid="1" editmode="gridmono"
+		></webaudio-pianoroll>
+
+<webaudio-slider onchange="Layout(this)" id="xrange" direction="horizontal" min="1" max="10" value="1"></webaudio-slider>
+<webaudio-slider onchange="Layout(this)" id="xoffset" direction="horizontal" width="200" min="0" max="20" step="0.01" value="0"></webaudio-slider>
+<webaudio-slider onchange="Layout(this)" id="yrange" min="3" max="32" value="16"></webaudio-slider>
+<webaudio-slider onchange="Layout(this)" id="yoffset" min="30" max="120" height="200" value="60"></webaudio-slider>
+</div>
+<button onclick="document.getElementById('mml').value=(document.getElementById('proll').getMMLString())">getMMLString</button>
+<button onclick="document.getElementById('proll').setMMLString(document.getElementById('mml').value)">setMMLString</button>
+<button onclick="Play()">Play</button>
+<button onclick="document.getElementById('proll').stop()">Stop</button>
+<br/>
+<textarea id="mml" rows="10" cols="80"></textarea>
+<br/>
+<hr/>
+</body>
+</html>

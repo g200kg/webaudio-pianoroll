@@ -1,0 +1,891 @@
+<dom-module id="webaudio-pianoroll">
+	<template>
+		<div class="wac-body" id="wac-body" touch-action="none">
+			<canvas id="wac-pianoroll" touch-action="none" tabindex="0"></canvas>
+			<div id="wac-kb"></div>
+			<img id="wac-markstart" class="marker" src="{{markstartsrc}}"/>
+			<img id="wac-markend" class="marker" src="{{markendsrc}}"/>
+			<img id="wac-playcursor" class="marker" src="{{playcursorsrc}}"/>
+		</div>
+		<style>
+			:host {
+				user-select: none;
+				display: inline-block;
+				font-family: sans-serif;
+				font-size: 11px;
+				padding:0;
+				margin:0;
+			}
+			#wac-body {
+				position: relative;
+				margin:0;
+				padding:0;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+			}
+			#wac-pianoroll {
+				cursor: pointer;
+				margin:0;
+				padding:0;
+				width: 100%;
+				height: 100%;
+				background-size:100% calc(100%*12/16);
+				background-position:left bottom;
+			}
+			.marker{
+				position: absolute;
+				left:0px;
+				top:0px;
+			}
+			#wac-kb{
+				position:absolute;
+				left:0px;
+				top:0px;
+				width:100px;
+				height:100%;
+				background:url('./kb.svg') repeat-y;
+				background-size:100% calc(100%*12/16);
+				background-position:left bottom;
+			}
+		</style>
+	</template>
+
+	<script>
+		Polymer({
+			is:"webaudio-pianoroll",
+			properties:{
+				width:      {type:Number, value:640, observer:'layout'},
+				height:     {type:Number, value:320, observer:'layout'},
+				xrange:			{type:Number, value:16, observer:'layout'},
+				yrange:			{type:Number, value:16, observer:'layout'},
+				xoffset:		{type:Number, value:0, observer:'layout'},
+				yoffset:		{type:Number, value:60, observer:'layout'},
+				collt:			{type:String, value:"#ccc"},
+				coldk:			{type:String, value:"#aaa"},
+				colgrid:		{type:String, value:"#666"},
+				colnote:		{type:String, value:"#f22"},
+				colnotesel:	{type:String, value:"#0f0"},
+				colnoteborder:	{type:String, value:"#000"},
+				colrulerbg:	{type:String, value:"#666"},
+				colrulerfg:	{type:String, value:"#fff"},
+				colrulerborder:	{type:String, value:"#000"},
+				xruler:			{type:Number, value:24, observer:'layout'},
+				yruler:			{type:Number, value:24, observer:'layout'},
+				octadj:			{type:Number, value:-1},
+				timebase:		{type:Number, value:16, observer:'layout'},
+				grid:				{type:Number, value:4},
+				curpos:			{type:Number, value:0},
+				loop:				{type:Number, value:0},
+				markend:		{type:Number, value:16, observer:'redrawMarker'},
+				markstart:	{type:Number, value:0, observer:'redrawMarker'},
+				preload:		{type:Number, value:1.0},
+				editmode:		{type:String, value:"gridmono"},
+				tempo:			{type:Number, value:120},
+				enable:			{type:Boolean, value:true},
+				bgsrc:			{type:String, value:null, observer:'layout'},
+				playcursorsrc: {type:String, value:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIj4NCjxwYXRoIGZpbGw9InJnYmEoMjU1LDEwMCwxMDAsMC44KSIgZD0iTTAsMSAyNCwxMiAwLDIzIHoiLz4NCjwvc3ZnPg0K"},
+				playcursoroffset:{type:Number, value:0},
+				markstartsrc: {type:String, value:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij4NCjxwYXRoIGZpbGw9IiMwYzAiIGQ9Ik0wLDEgMjQsMSAwLDIzIHoiLz4NCjwvc3ZnPg0K"},
+				markstartoffset:{type:Number, value:0},
+				markendsrc: {type:String, value:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij4NCjxwYXRoIGZpbGw9IiMwYzAiIGQ9Ik0wLDEgMjQsMSAyNCwyMyB6Ii8+DQo8L3N2Zz4NCg=="},
+				markendoffset:{type:Number, value:-24},
+				kbsrc:{type:String, value:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSI0ODAiPg0KPHBhdGggZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjMDAwIiBkPSJNMCwwIGgyNHY0ODBoLTI0eiIvPg0KPHBhdGggZmlsbD0iIzAwMCIgZD0iTTAsNDAgaDEydjQwaC0xMnogTTAsMTIwIGgxMnY0MGgtMTJ6IE0wLDIwMCBoMTJ2NDBoLTEyeiBNMCwzMjAgaDEydjQwaC0xMnogTTAsNDAwIGgxMnY0MGgtMTJ6Ii8+DQo8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIGQ9Ik0wLDYwIGgyNCBNMCwxNDAgaDI0IE0wLDIyMCBoMjQgTTAsMjgwIGgyNCBNMCwzNDAgaDI0IE0wLDQyMCBoMjQiLz4NCjwvc3ZnPg0K"},
+				kbwidth:{type:Number,value:40},
+			},
+			sortSequence:function(){
+				this.sequence.sort((x,y)=>{return x.t-y.t;});
+			},
+			findNextEv:function(tick){
+				var i;
+				for(i=0;i<this.sequence.length;++i){
+					var nev=this.sequence[i];
+					if(nev.t>=tick){
+						return {t1:tick,t2:nev.t,dt:nev.t-tick,i:i-1};
+					}
+				}
+				return {t1:0,t2:0,dt:0,i:-1};
+			},
+			locate:function(tick){
+				this.nextEv=this.findNextEv(tick);
+			},
+			nextEvent: function(tick,seq){
+				this.t0=tick;
+				for(var i=0;i<seq.length;++i){
+					var nev=seq[i];
+					if(nev.t>=tick){
+						this.t1=nev.t;
+						this.dt=nev.t-tick;
+						this.i=i;
+						break;
+					}
+				}
+				this.next=function(){
+					this.i++;
+					this.t0=this.t1;
+					if(this.i>=seq.length){
+						this.i=-1;
+						return;
+					}
+					else{
+						this.t1=seq[this.i].t;
+						this.dt=this.t1-this.t0;
+					}
+				};
+			},
+			locatePlay:function(tick){
+				return;
+				var e=this.findNextEv(tick);
+				if(e==null){
+					this.index1=-1;
+					this.time0=this.time1=this.actx.currentTime;
+					this.tick0=this.tick1=tick;
+				}
+				else{
+					this.index1=e.i;
+					this.tick1=this.tick0+e.dt;
+					if(!this.tick2time)
+						this.tick2time=1;
+					this.time1=this.time0+e.dt*this.tick2time;
+				}
+			},
+			play:function(actx,playcallback){
+				function Interval(){
+					var current=this.actx.currentTime;
+					while(this.timestack.length>1 && current>=this.timestack[1][0]){
+						this.timestack.shift();
+					}
+					this.curpos=this.timestack[0][1]+(current-this.timestack[0][0])/this.timestack[0][2];
+					this.redrawMarker();
+					if(this.curpos>=this.markend){
+						if(!this.loop)
+							this.stop();
+						else{
+							this.locatePlay(this.markstart);
+							this.timestack.push([this.time1,this.markstart,this.tick2time]);
+						}
+					}
+					if(this.sequence.length>0){
+						while(current+this.preload>=this.time1){
+							this.time0=this.time1;
+							this.tick0=this.tick1;
+							++this.index1;
+							var e=this.sequence[this.index1];
+							if(!e || e.t>=this.markend){
+								if(this.markend>this.tick0){
+									this.time1+=(this.markend-this.tick0)*this.tick2time;
+									this.tick1=this.markstart;
+									this.timestack.push([this.time1,this.markstart,this.tick2time]);
+								}
+								var p=this.findNextEv(this.markstart);
+								this.index1=p.i;
+							}
+							else{
+								this.tick1=e.t;
+								this.time1+=(this.tick1-this.tick0)*this.tick2time;
+								this.timestack.push([this.time1,e.t,this.tick2time]);
+								var gmax=Math.min(e.t+e.g,this.markend)-e.t;
+								var cbev={t:this.time1,g:this.time1+gmax*this.tick2time,n:e.n};
+								if(this.playcallback)
+									this.playcallback(cbev);
+							}
+						}
+					}
+				}
+				if(this.timer!=null)
+					return;
+				this.actx=actx;
+				this.playcallback=playcallback;
+				this.timestack=[];
+				this.time0=this.time1=this.actx.currentTime+.0;
+				this.tick0=this.tick1=this.markstart;
+				this.index1=-1;
+				this.tick2time=4*60/this.tempo/this.timebase;
+				var p=this.findNextEv(this.markstart);
+				this.index1=p.i;
+				this.time1+=p.dt*this.tick2time;
+				this.timestack.push([0,this.markstart,0]);
+				this.timestack.push([this.time1,this.markstart,this.tick2time]);
+				this.timer=setInterval(Interval.bind(this),25);
+			},
+			stop:function(){
+				if(this.timer)
+					clearInterval(this.timer);
+				this.timer=null;
+			},
+			time2Tick(t){
+
+			},
+			setMMLString:function(s){
+				this.sequence=[];
+				var i,l,n,t,defo,defl,tie,evlast;
+				var parse={s:s,i:i,tb:this.timebase};
+				function getNum(p){
+					var n=0;
+					while(p.s[p.i]>="0"&&p.s[p.i]<="9"){
+						n=n*10+parseInt(p.s[p.i]);
+						++p.i;
+					}
+					return n;
+				}
+				function getLen(p){
+					var n=getNum(p);
+					if(n==0)
+						n=defl;
+					n=p.tb/n;
+					var n2=n;
+					while(p.s[p.i]=="."){
+						++p.i;
+						n+=(n2>>=1);
+					}
+					return n;
+				}
+				function getNote(p){
+					switch(p.s[p.i]){
+					case "c": case "C": n=0; break;
+					case "d": case "D": n=2; break;
+					case "e": case "E": n=4; break;
+					case "f": case "F": n=5; break;
+					case "g": case "G": n=7; break;
+					case "a": case "A": n=9; break;
+					case "b": case "B": n=11; break;
+					default:
+						n=-1;
+					}
+					++p.i;
+					if(n<0)
+						return -1;
+					for(;;){
+						switch(p.s[p.i]){
+						case "-": --n; break;
+						case "+": ++n; break;
+						case "#": ++n; break;
+						default:
+							return n;
+						}
+						++p.i;
+					}
+				}
+				defo=4;
+				defl=8;
+				t=0;
+				tie=0;
+				evlast=null;
+				for(parse.i=0;parse.i<parse.s.length;){
+					switch(parse.s[parse.i]){
+					case '>':
+						++parse.i; ++defo; n=-1; l=0;
+						break;
+					case '<':
+						++parse.i; --defo; n=-1; l=0;
+						break;
+					case '&': case '^':
+						++parse.i; tie=1; n=-1; l=0;
+						break;
+					case 't': case 'T':
+						++parse.i; n=-1; l=0;
+						this.tempo=getNum(parse);
+						break;
+					case 'o': case 'O':
+						++parse.i; n=-1; l=0;
+						defo=getNum(parse);
+						break;
+					case 'l': case 'L':
+						++parse.i; n=-1; l=0;
+						defl=getNum(parse);
+						break;
+					case 'r': case 'R':
+						++parse.i; n=-1;
+						l=getLen(parse);
+						break;
+					default:
+						n=getNote(parse);
+						if(n>=0)
+							l=getLen(parse);
+						else
+							l=0;
+						break;
+					}
+					if(n>=0){
+						n=(defo-this.octadj)*12+n;
+						if(tie && evlast && evlast.n==n){
+							evlast.g+=l;
+							tie=0;
+						}
+						else
+							this.sequence.push(evlast={t:t,n:n,g:l,f:0});
+					}
+					t+=l;
+				}
+				this.redraw();
+			},
+			getMMLString:function(){
+				function makeNote(n,l,tb){
+					var mmlnote="";
+					var ltab=[
+						[960,"1"],[840,"2.."],[720,"2."],[480,"2"],
+						[420,"4.."],[360,"4."],[240,"4"],
+						[210,"8.."],[180,"8."],[120,""],
+						[105,"16.."],[90,"16."],[60,"16"],
+						[45,"32."],[30,"32"],[16,"60"],[15,"64"],
+						[8,"120"],[4,"240"],[2,"480"],[1,"960"]
+					];
+					l=l*960/tb;
+					while(l>0){
+						for(var j=0;j<ltab.length;++j){
+							while(l>=ltab[j][0]){
+								l-=ltab[j][0];
+								mmlnote+="&"+n+ltab[j][1];
+							}
+						}
+					}
+					return mmlnote.substring(1);
+				}
+				var mml="t"+this.tempo+"o4l8";
+				var ti=0,meas=0,oct=5,n;
+				var notes=["c","d-","d","e-","e","f","g-","g","a-","a","b-","b"];
+				for(var i=0;i<this.sequence.length;++i) {
+					var ev=this.sequence[i];
+					if(ev.t>ti) {
+						var l=ev.t-ti;
+						mml+=makeNote("r",l,this.timebase);
+						ti=ev.t;
+					}
+					var n=ev.n;
+					if(n<oct*12||n>=oct*12+12){
+						oct=(n/12)|0;
+						mml+="o"+(oct+this.octadj);
+					}
+					n=notes[n%12];
+					var l=ev.g;
+					if(i+1<this.sequence.length) {
+						var ev2=this.sequence[i+1];
+						if(ev2.t<ev.t+l) {
+							l=ev2.t-ev.t;
+							ti=ev2.t;
+						}
+						else
+							ti=ev.t+ev.g;
+					}
+					else
+						ti=ev.t+ev.g;
+					mml+=makeNote(n,l,this.timebase);
+				}
+				return mml;
+			},
+			hitTest:function(pos){
+				var i;
+				var ht={t:0,n:0,i:-1,m:" "};
+				var l=this.sequence.length;
+				ht.t=(this.xoffset+(pos.x-this.yruler-this.kbwidth)/this.swidth*this.xrange);
+				ht.n=this.yoffset-(pos.y-this.height)/this.steph;
+				if(pos.y>=this.height || pos.x>=this.width){
+					return ht;
+				}
+				if(pos.y<this.xruler){
+					ht.m="x";
+					return ht;
+				}
+				if(pos.x<this.yruler+this.kbwidth){
+					ht.m="y";
+					return ht;
+				}
+				for(i=0;i<l;++i){
+					var ev=this.sequence[i];
+					if((ht.n|0)==ev.n){
+						if(ev.f && Math.abs(ev.t-ht.t)*this.stepw<8){
+							ht.m="b";
+							ht.i=i;
+							return ht;
+						}
+						if(ev.f && Math.abs(ev.t+ev.g-ht.t)*this.stepw<8){
+							ht.m="e";
+							ht.i=i;
+							return ht;
+						}
+						if(ht.t>=ev.t&&ht.t<ev.t+ev.g){
+							ht.i=i;
+							if(this.sequence[i].f)
+								ht.m="N";
+							else
+								ht.m="n";
+							return ht;
+						}
+					}
+				}
+				ht.m="s";
+				return ht;
+			},
+			addNote:function(t,n,g){
+				if(t>=0 && n>=0 && n<128){
+					this.sequence.push({t:t,n:n,g:g});
+					this.sortSequence();
+					this.redraw();
+				}
+			},
+			delNote:function(idx){
+				this.sequence.splice(idx,1);
+				this.redraw();
+			},
+			delAreaNote:function(t,g){
+				var i;
+				var l=this.sequence.length;
+				for(i=l-1;i>=0;--i){
+					var ev=this.sequence[i];
+					if(!ev.f){
+						if(t<=ev.t && t+g>=ev.t+ev.g){
+							this.sequence.splice(i,1);
+						}
+						else if(t<=ev.t && t+g>ev.t && t+g<ev.t+ev.g){
+							ev.g=ev.t+ev.g-(t+g);
+							ev.t=t+g;
+						}
+						else if(t>=ev.t && t<ev.t+ev.g && t+g>=ev.t+ev.g){
+							ev.g=t-ev.t;
+						}
+						else if(t>ev.t && t+g<ev.t+ev.g){
+							this.sequence.push({t:t+g,g:ev.t+ev.g-t-g,n:ev.n,f:0});
+							ev.g=t-ev.t;
+						}
+					}
+				}
+			},
+			delSelectedNote:function(){
+				var i,l=this.sequence.length;
+				for(i=l-1;i>=0;--i){
+					var ev=this.sequence[i];
+					if(ev.f)
+						this.sequence.splice(i,1);
+				}
+			},
+			clearSel:function(){
+				var i;
+				var l=this.sequence.length;
+				for(i=0;i<l;++i){
+					this.sequence[i].f=0;
+				}
+			},
+			editDragDown:function(pos){
+				var ht=this.hitTest(pos);
+				if(ht.m=="N"){
+					var ev=this.sequence[ht.i];
+					this.dragging={o:"D",m:"N",i:ht.i,x:ht.t-ev.t};
+					this.redraw();
+				}
+				else if(ht.m=="n"){
+					var ev=this.sequence[ht.i];
+					this.clearSel();
+					ev.f=1;
+					this.redraw();
+				}
+				else if(ht.m=="e"){
+					this.dragging={o:"D",m:"e",i:ht.i};
+				}
+				else if(ht.m=="b"){
+					this.dragging={o:"D",m:"b",i:ht.i};
+				}
+				else if(ht.m=="s"&&ht.t>=0){
+					this.clearSel();
+					this.sequence.push({t:ht.t|0, n:ht.n|0, g:1, f:1});
+					this.redraw();
+					this.dragging={o:"D",m:"e",i:this.sequence.length-1};
+				}
+			},
+			editDragMove:function(pos){
+				var ht=this.hitTest(pos);
+				var ev,t;
+				if(this.dragging.o=="D"){
+					switch(this.dragging.m){
+					case "e":
+						ev=this.sequence[this.dragging.i];
+						t=Math.max(0,ht.t);
+						ev.g=(t|0)-ev.t+1;
+						if(ev.g<0){
+							ev.t+=ev.g;
+							ev.g=-ev.g;
+							this.dragging.m="b";
+						}
+						this.redraw();
+						break;
+					case "b":
+						ev=this.sequence[this.dragging.i];
+						t=Math.max(0,ht.t)|0;
+						ev.g=ev.t+ev.g-t;
+						ev.t=t;
+						if(ev.g<0){
+							ev.t+=ev.g;
+							ev.g=-ev.g;
+							this.dragging.m="e";
+						}
+						this.redraw();
+						break;
+					case "N":
+						ev=this.sequence[this.dragging.i];
+						ev.n=ht.n|0;
+						ev.t=Math.max(0,ht.t-this.dragging.x)|0;
+						this.redraw();
+						break;
+					}
+				}
+			},
+			editGridDown:function(pos){
+				var ht=this.hitTest(pos);
+				if(ht.m=="n"){
+					this.delNote(ht.i);
+					this.dragging={o:"G",m:"0"};
+				}
+				else if(ht.m=="s"&&ht.t>=0){
+					var px=Math.floor(ht.t);
+					if(this.editmode=="gridmono")
+						this.delAreaNote(px,1);
+					this.addNote(px,ht.n|0,1);
+					this.dragging={o:"G",m:"1"};
+				}
+			},
+			editGridMove:function(pos){
+				var ht=this.hitTest(pos);
+				if(this.dragging.o=="G"){
+					switch(this.dragging.m){
+					case "1":
+						var px=Math.floor(ht.t);
+						if(ht.m=="s"){
+							if(this.editmode=="gridmono")
+								this.delAreaNote(px,1);
+							this.addNote(px,ht.n|0,1);
+						}
+						break;
+					case "0":
+						if(ht.m=="n")
+							this.delNote(ht.i);
+						break;
+					}
+				}
+			},
+			ready:function(){
+				var body = this.$['wac-body'];
+				this.canvas = this.$['wac-pianoroll'];
+				this.canvas.addEventListener('keydown',this.keydown.bind(this),false);
+				this.canvas.addEventListener('contextmenu',this.contextmenu.bind(this),false);
+				this.canvas.addEventListener('DOMMouseScroll',this.wheel.bind(this),false);
+				this.canvas.addEventListener('mousewheel',this.wheel.bind(this),false);
+				this.canvas.addEventListener('mousedown',this.pointerdown.bind(this),false);
+				this.canvas.addEventListener('touchstart',this.pointerdown.bind(this),false);
+				this.canvas.addEventListener('mousemove', this.pointermove.bind(this),false);
+				this.canvas.addEventListener('mouseover',this.pointerover.bind(this),false);
+				this.canvas.addEventListener('mouseout',this.pointerout.bind(this),false);
+				this.ctx=this.$['wac-pianoroll'].getContext("2d");
+				this.playcursorimg=this.$['wac-playcursor'];
+				this.markstartimg=this.$['wac-markstart'];
+				this.markendimg=this.$['wac-markend'];
+				this.markendimg.addEventListener("mousedown",this.pointerdown.bind(this),false);
+				this.markendimg.addEventListener('mousemove', this.pointermove.bind(this),false);
+				this.markstartimg.addEventListener("mousedown",this.pointerdown.bind(this),false);
+				this.markstartimg.addEventListener('mousemove', this.pointermove.bind(this),false);
+				this.kbimg=this.$['wac-kb'];
+				this.sequence=[];
+				this.dragging={o:null};
+				this.kbimg.style.height=this.sheight+"px";
+				this.kbimg.style.backgroundSize=(this.steph*12)+"px";
+				this.layout();
+				this.initialized=1;
+				this.redraw();
+			},
+			setupImage: function(){
+				var body = this.$['wac-body'];
+				var knb = this.$['wac-pianoroll'];
+			},
+			preventScroll: function(e){
+				e.preventDefault();
+			},
+			getPos: function(e){
+				return {
+					x:e.clientX-this.rcTarget.left,
+					y:e.clientY-this.rcTarget.top,
+				};
+			},
+			contextmenu: function(e){
+				this.delSelectedNote();
+				this.redraw();
+				e.preventDefault();
+			},
+			keydown: function(e){
+				switch(e.keyCode){
+				case 46://delNote
+					this.delSelectedNote();
+					this.redraw();
+					break;
+				}
+			},
+			pointerdown: function(e) {
+				if(!this.enable)
+					return;
+				if(e.touches)
+					e = e.touches[0];
+				this.rcTarget=this.canvas.getBoundingClientRect();
+				this.boundPointermove = this.pointermove.bind(this);
+				this.boundCancel = this.cancel.bind(this);
+				window.addEventListener('touchmove', this.boundPointermove, true);
+				window.addEventListener('mouseup', this.boundCancel, true);
+				window.addEventListener('touchend', this.boundCancel, true);
+				window.addEventListener('touchcancel', this.boundCancel, true);
+				document.body.addEventListener('touchstart',this.preventScroll);
+				var pos=this.getPos(e);
+				if(e.target==this.markendimg){
+					this.dragging={o:"E",x:pos.x,m:this.markend};
+					e.preventDefault();
+					e.stopPropagation();
+					return false;
+				}
+				if(e.target==this.markstartimg){
+					this.dragging={o:"S",x:pos.x,m:this.markstart};
+					e.preventDefault();
+					e.stopPropagation();
+					return false;
+				}
+				this.canvas.focus();
+				switch(this.editmode){
+				case "gridpoly":
+				case "gridmono":
+					this.editGridDown(pos);
+					break;
+				case "dragpoly":
+				case "dragmono":
+					this.editDragDown(pos);
+					break;
+				}
+				this.press = 1;
+				e.preventDefault();
+				e.stopPropagation();
+				return false;
+			},
+			pointermove: function(e) {
+				this.rcTarget=this.canvas.getBoundingClientRect();
+				if(e.touches)
+					e = e.touches[0];
+				var pos=this.getPos(e);
+				switch(this.dragging.o){
+				case null:
+					var ht=this.hitTest(pos);
+					switch(ht.m){
+					case "e": this.canvas.style.cursor="e-resize"; break;
+					case "b": this.canvas.style.cursor="w-resize"; break;
+					case "N": this.canvas.style.cursor="move"; break;
+					case "n": this.canvas.style.cursor="pointer"; break;
+					case "s": this.canvas.style.cursor="pointer"; break;
+					}
+					break;
+				case "E":
+					var p=Math.max(1,(this.dragging.m+(pos.x-this.dragging.x)/this.stepw+.5)|0);
+					if(this.markstart>=p)
+						this.markstart=p-1;
+					this.markend=p;
+					break;
+				case "S":
+					var p=Math.max(0,(this.dragging.m+(pos.x-this.dragging.x)/this.stepw+.5)|0);
+					if(this.markend<=p)
+						this.markend=p+1;
+					this.markstart=p;
+					break;
+				}
+				switch(this.editmode){
+				case "gridpoly":
+				case "gridmono":
+					this.editGridMove(pos);
+					break;
+				case "dragpoly":
+				case "dragmono":
+					this.editDragMove(pos);
+					break;
+				}
+				e.preventDefault();
+				e.stopPropagation();
+				return false;
+			},
+			cancel: function(e) {
+				var pos=this.getPos(e);
+				if(this.dragging.o=="D"){
+					var ev=this.sequence[this.dragging.i];
+					if(this.editmode=="dragmono")
+						this.delAreaNote(ev.t,ev.g);
+					this.redraw();
+				}
+				this.dragging={o:null};
+				if(this.press){
+					this.sortSequence();
+				}
+				this.press = 0;
+				window.removeEventListener('touchmove', this.boundPointermove, true);
+				window.removeEventListener('mouseup', this.boundCancel, true);
+				window.removeEventListener('touchend', this.boundCancel, true);
+				window.removeEventListener('touchcancel', this.boundCancel, true);
+				document.body.removeEventListener('touchstart',this.preventScroll,false);
+			},
+			pointerover: function(e) {
+			},
+			pointerout: function(e) {
+			},
+			wheel: function(e) {
+				var delta = 0;
+				if(!e)
+					e = window.event;
+				if(e.wheelDelta)
+					delta = e.wheelDelta/120;
+				else if(e.detail)
+					delta = -e.detail/3;
+				if(e.shiftKey)
+					delta *= 0.2;
+				delta *= (this.max - this.min) * 0.05;
+				if(Math.abs(delta) < this.step)
+					delta = (delta>0)?this.step:-this.step;
+				e.preventDefault();
+			},
+			layout: function(){
+				if(typeof(this.kbwidth)=="undefined")
+					return;
+				var proll = this.$['wac-pianoroll'];
+				var bodystyle = this.$['wac-body'].style;
+				proll.style.background="url('"+this.bgsrc+"')";
+				if(this.width){
+					proll.width = this.width;
+					bodystyle.width = proll.style.width = this.width+"px";
+				}
+				if(this.height) {
+					proll.height = this.height;
+					bodystyle.height = proll.style.height = this.height+"px";
+				}
+				this.swidth=proll.width-this.yruler;
+				this.swidth-=this.kbwidth;
+				this.sheight=proll.height-this.xruler;
+				this.redraw();
+			},
+			redrawMarker: function(){
+				if(!this.initialized)
+					return;
+				var cur=(this.curpos-this.xoffset)*this.stepw+this.yruler+this.kbwidth;
+				this.playcursorimg.style.left=(cur+this.playcursoroffset)+"px";
+				var start=(this.markstart-this.xoffset)*this.stepw+this.yruler+this.kbwidth;
+				this.markstartimg.style.left=(start+this.markstartoffset)+"px";
+				var end=(this.markend-this.xoffset)*this.stepw+this.yruler+this.kbwidth;
+				this.markendimg.style.left=(end+this.markendoffset)+"px";
+			},
+			redrawGrid: function(){
+				for(y=0;y<128;++y){
+					if(this.semiflag[y%12]&1)
+						this.ctx.fillStyle=this.coldk;
+					else
+						this.ctx.fillStyle=this.collt;
+					var ys = this.height - (y - this.yoffset) * this.steph;
+					this.ctx.fillRect(this.yruler+this.kbwidth, ys|0, this.swidth,-this.steph);
+					this.ctx.fillStyle=this.colgrid;
+					this.ctx.fillRect(this.yruler+this.kbwidth, ys|0, this.swidth,1);
+				}
+				for(t=0;;t+=this.grid){
+					x=this.stepw*(t-this.xoffset)+this.yruler+this.kbwidth;
+					this.ctx.fillRect(x|0,this.xruler,1,this.sheight);
+					if(x>=this.width)
+						break;
+				}
+			},
+			semiflag:[6,1,0,1,0,2,1,0,1,0,1,0],
+			redrawXRuler: function(){
+				if(this.xruler){
+					this.ctx.textAlign="left";
+					this.ctx.font=(this.xruler/2)+"px 'sans-serif'";
+					this.ctx.fillStyle=this.colrulerbg;
+					this.ctx.fillRect(0,0,this.width,this.xruler);
+					this.ctx.fillStyle=this.colrulerborder;
+					this.ctx.fillRect(0,0,this.width,1);
+					this.ctx.fillRect(0,0,1,this.xruler);
+					this.ctx.fillRect(0,this.xruler-1,this.width,1);
+					this.ctx.fillRect(this.width-1,0,1,this.xruler);
+					this.ctx.fillStyle=this.colrulerfg;
+					for(t=0;;t+=this.timebase){
+						x=(t-this.xoffset)*this.stepw+this.yruler+this.kbwidth;
+						this.ctx.fillRect(x,0,1,this.xruler);
+						this.ctx.fillText(t/this.timebase+1,x+4,this.xruler-8);
+						if(x>=this.width)
+							break;
+					}
+				}
+			},
+			redrawYRuler: function(){
+				if(this.yruler){
+					this.ctx.textAlign="right";
+					this.ctx.font=(this.steph/2)+"px 'sans-serif'";
+					this.ctx.fillStyle=this.colrulerbg;
+					this.ctx.fillRect(0,this.xruler,this.yruler,this.sheight);
+					this.ctx.fillStyle=this.colrulerborder;
+					this.ctx.fillRect(0,this.xruler,1,this.sheight);
+					this.ctx.fillRect(this.yruler,this.xruler,1,this.sheight);
+					this.ctx.fillRect(0,this.height-1,this.yruler,1);
+					this.ctx.fillStyle=this.colrulerfg;
+					for(var y=0;y<128;y+=12){
+						var ys=this.height-this.steph*(y-this.yoffset);
+						this.ctx.fillRect(0,ys|0,this.yruler,-1);
+						this.ctx.fillText("C"+(((y/12)|0)+this.octadj),this.yruler-4,ys-4);
+					}
+				}
+				this.kbimg.style.top=(this.xruler)+"px";
+				this.kbimg.style.left=this.yruler+"px";
+				this.kbimg.style.width=this.kbwidth+"px";
+				this.kbimg.style.backgroundSize="100% "+(this.steph*12)+"px";
+				this.kbimg.style.backgroundPosition="0px "+(this.sheight+this.steph*this.yoffset)+"px";
+			},
+			redrawKeyboard: function(){
+				if(this.yruler){
+					this.ctx.textAlign="right";
+					this.ctx.font=(this.steph/2)+"px 'sans-serif'";
+					this.ctx.fillStyle=this.colortab.kbwh;
+					this.ctx.fillRect(1,this.xruler,this.yruler,this.sheight);
+					this.ctx.fillStyle=this.colortab.kbbk;
+					for(y=0;y<128;++y){
+						var ys=this.height-this.steph*(y-this.yoffset);
+						var ysemi=y%12;
+						var fsemi=this.semiflag[ysemi];
+						if(fsemi&1){
+							this.ctx.fillRect(0,ys,this.yruler/2,-this.steph);
+							this.ctx.fillRect(0,(ys-this.steph/2)|0,this.yruler,-1);
+						}
+						if(fsemi&2)
+							this.ctx.fillRect(0,ys|0,this.yruler,-1);
+						if(fsemi&4)
+							this.ctx.fillText("C"+(((y/12)|0)+this.octadj),this.yruler-4,ys-4);
+					}
+					this.ctx.fillRect(this.yruler,this.xruler,1,this.sheight);
+				}
+			},
+			redraw: function() {
+				var s,t,x,w,y,x2,y2;
+				if(!this.ctx)
+					return;
+				var style = this.$['wac-pianoroll'].style;
+				this.ctx.clearRect(0,0,this.width,this.height);
+				this.stepw = this.swidth/this.xrange;
+				this.steph = this.sheight/this.yrange;
+				this.redrawGrid();
+				var l=this.sequence.length;
+				for(s=0; s<l; ++s){
+					var ev=this.sequence[s];
+					if(ev.f)
+						this.ctx.fillStyle=this.colnotesel;
+					else
+						this.ctx.fillStyle=this.colnote;
+					w=ev.g*this.stepw;
+					x=(ev.t-this.xoffset)*this.stepw+this.yruler+this.kbwidth;
+					x2=(x+w)|0; x|=0;
+					y=this.height - (ev.n-this.yoffset)*this.steph;
+					y2=(y-this.steph)|0; y|=0;
+					this.ctx.fillRect(x,y,x2-x,y2-y);
+					this.ctx.fillStyle=this.colnoteborder;
+					this.ctx.fillRect(x,y,1,y2-y);
+					this.ctx.fillRect(x2,y,1,y2-y);
+					this.ctx.fillRect(x,y,x2-x,1);
+					this.ctx.fillRect(x,y2,x2-x,1);
+				}
+				this.redrawYRuler();
+				this.redrawXRuler();
+				this.redrawMarker();
+			}
+	});
+	</script>
+</dom-module>

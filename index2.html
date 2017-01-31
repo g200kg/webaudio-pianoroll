@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+<script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/webaudio-controls/webaudio-controls.html" >
+<link rel="import" href="webaudio-pianoroll.html" >
+</head>
+<body>
+<h3><a href="https://github.com/g200kg/webaudio-pianoroll">GitHub Respository</a></h3>
+<hr/>
+<h1>Other samples</h1>
+Defaults, gridmono<br/>
+<webaudio-pianoroll></webaudio-pianoroll>
+<hr/>
+editmode="gridpoly" xruler="0" yruler="0" kbwidth="0" with background image<br/>
+<webaudio-pianoroll
+	grid="1"
+	xruler="0" yruler="0" kbwidth="0"
+	xrange="8" yrange="8"
+	bgsrc="./bg.jpg"
+	collt="rgba(255,255,255,0.7)"
+	coldk="rgba(200,200,200,0.7)"
+	editmode="gridpoly"
+	></webaudio-pianoroll>
+<hr/>
+editmode="dragpoly" timebase="480"<br/>
+<webaudio-pianoroll
+	timebase="480" xrange="1920" grid="120"
+	markstart="0" markend="1920"
+	grid="1" editmode="dragpoly"
+	></webaudio-pianoroll>
+<hr/>
+editmode="dragmono" color customized<br/>
+<webaudio-pianoroll
+	editmode="dragmono" yrange="32"
+	collt="#67a" coldk="#459"
+	colgrid="#99f"
+	colnote="#8af" colnotesel="#bdf"
+	colrulerbg="#87f" colrulerfg="#fff"
+	></webaudio-pianoroll>
+<hr/>
+</body>
+</html>
