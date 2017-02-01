@@ -29,7 +29,7 @@ Live Demo page is available.
 |xruler   |Number |24        | time axis ruler height in px|
 |yruler   |Number |24        | y axis ruler width in px|
 |octadj   |Number |-1        | ruler octave value adjust <br/>(-1 : 60=C4)|
-|curpos   |Number |0         |current play position in tick|
+|cursor   |Number |0         |current play position in tick|
 |markstart|Number |0         | play range start marker position in tick|
 |markend  |Number |16        | play range end marker position in tick|
 |collt    |String |"#ccc"    | score background (light part) color|
@@ -42,8 +42,8 @@ Live Demo page is available.
 |colrulerfg|String|"#fff"    | ruler foreground color|
 |colrulerborder|String|"#000"| ruler border color|
 |bgsrc|String|null| background image url |
-|playcursorsrc|String| internal resource| playcursor image url|
-|playcursoroffset|Number|0|playcursor image x offset in px|
+|cursorsrc|String| internal resource| playcursor image url|
+|cursoroffset|Number|0|playcursor image x offset in px|
 |markstartsrc|String|internal resource| markstart image url|
 |markstartoffset|Number|0| markstart image x offset in px|
 |markendsrc|String|internal resource| markend image url|
@@ -62,7 +62,8 @@ Live Demo page is available.
 |redraw()| redraw all|
 |getMMLString()| get MML string of current data. <br/>Note that this function is for `mono` type editmode.|
 |setMMLString(str)| set MML string to webaudio-pianoroll. <br/>Note that this function is for `mono` type editmode.|
-|play(audioContext, callback)|play current data. `webaudio-pianoroll` does not generate sound directly, but it passes necessary information to the specified callback function. `audioContext` is used to control the time axis.|
+|locate(tick)| set cursor to specified tick|
+|play(audioContext, callback, starttick)|play current data. `webaudio-pianoroll` does not generate sound directly, but it passes necessary information to the specified callback function. `audioContext` is used to control the time axis. If `starttick` is not specified, play from current cursor position.|
 
 ## Callback
 play() function passes necessary data for playing to callback function like :

@@ -5,7 +5,7 @@
 			<div id="wac-kb"></div>
 			<img id="wac-markstart" class="marker" src="{{markstartsrc}}"/>
 			<img id="wac-markend" class="marker" src="{{markendsrc}}"/>
-			<img id="wac-playcursor" class="marker" src="{{playcursorsrc}}"/>
+			<img id="wac-cursor" class="marker" src="{{cursorsrc}}"/>
 		</div>
 		<style>
 			:host {
@@ -37,6 +37,7 @@
 				position: absolute;
 				left:0px;
 				top:0px;
+				cursor:ew-resize;
 			}
 			#wac-kb{
 				position:absolute;
@@ -67,9 +68,10 @@
 				xruler:			{type:Number, value:24, observer:'layout'},
 				yruler:			{type:Number, value:24, observer:'layout'},
 				octadj:			{type:Number, value:-1},
-				curpos:			{type:Number, value:0},
+				cursor:			{type:Number, value:0, observer:'redrawMarker'},
 				markstart:	{type:Number, value:0, observer:'redrawMarker'},
 				markend:		{type:Number, value:16, observer:'redrawMarker'},
+				defvelo:		{type:Number, value:100},
 				collt:			{type:String, value:"#ccc"},
 				coldk:			{type:String, value:"#aaa"},
 				colgrid:		{type:String, value:"#666"},
@@ -80,8 +82,8 @@
 				colrulerfg:	{type:String, value:"#fff"},
 				colrulerborder:	{type:String, value:"#000"},
 				bgsrc:			{type:String, value:null, observer:'layout'},
-				playcursorsrc: {type:String, value:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIj4NCjxwYXRoIGZpbGw9InJnYmEoMjU1LDEwMCwxMDAsMC44KSIgZD0iTTAsMSAyNCwxMiAwLDIzIHoiLz4NCjwvc3ZnPg0K"},
-				playcursoroffset:{type:Number, value:0},
+				cursorsrc: {type:String, value:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIj4NCjxwYXRoIGZpbGw9InJnYmEoMjU1LDEwMCwxMDAsMC44KSIgZD0iTTAsMSAyNCwxMiAwLDIzIHoiLz4NCjwvc3ZnPg0K"},
+				cursoroffset:{type:Number, value:0},
 				markstartsrc: {type:String, value:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij4NCjxwYXRoIGZpbGw9IiMwYzAiIGQ9Ik0wLDEgMjQsMSAwLDIzIHoiLz4NCjwvc3ZnPg0K"},
 				markstartoffset:{type:Number, value:0},
 				markendsrc: {type:String, value:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij4NCjxwYXRoIGZpbGw9IiMwYzAiIGQ9Ik0wLDEgMjQsMSAyNCwyMyB6Ii8+DQo8L3N2Zz4NCg=="},
@@ -107,31 +109,25 @@
 				}
 				return {t1:tick,t2:this.markend,dt:this.markend-tick,i:-1};
 			},
-			play:function(actx,playcallback){
+			locate:function(tick){
+				this.cursor=tick;
+			},
+			play:function(actx,playcallback,tick){
 				function Interval(){
 					var current=this.actx.currentTime;
 					while(this.timestack.length>1 && current>=this.timestack[1][0]){
 						this.timestack.shift();
 					}
-					this.curpos=this.timestack[0][1]+(current-this.timestack[0][0])/this.timestack[0][2];
+					this.cursor=this.timestack[0][1]+(current-this.timestack[0][0])/this.timestack[0][2];
 					this.redrawMarker();
-					if(this.curpos>=this.markend){
-						if(!this.loop)
-							this.stop();
-						else
-							this.timestack.push([this.time1,this.markstart,this.tick2time]);
-					}
 					while(current+this.preload>=this.time1){
 						this.time0=this.time1;
 						this.tick0=this.tick1;
 						var e=this.sequence[this.index1];
 						if(!e || e.t>=this.markend){
-							if(this.markend>this.tick0){
-								this.time1+=(this.markend-this.tick0)*this.tick2time;
-								this.tick1=this.markstart;
-								this.timestack.push([this.time1,this.markstart,this.tick2time]);
-							}
+							this.timestack.push([this.time1,this.markstart,this.tick2time]);
 							var p=this.findNextEv(this.markstart);
+							this.time1+=p.dt*this.tick2time;
 							this.index1=p.i;
 						}
 						else{
@@ -154,29 +150,31 @@
 						}
 					}
 				}
+				if(typeof(tick)!="undefined")
+					locate(tick);
 				if(this.timer!=null)
 					return;
 				this.actx=actx;
 				this.playcallback=playcallback;
 				this.timestack=[];
 				this.time0=this.time1=this.actx.currentTime+0.1;
-				this.tick0=this.tick1=this.markstart;
+				this.tick0=this.tick1=this.cursor;
 				this.tick2time=4*60/this.tempo/this.timebase;
-				var p=this.findNextEv(this.markstart);
+				var p=this.findNextEv(this.cursor);
 				this.index1=p.i;
-				this.timestack.push([0,this.markstart,0]);
-				this.timestack.push([this.time0,this.markstart,this.tick2time]);
+				this.timestack.push([0,this.cursor,0]);
+				this.timestack.push([this.time0,this.cursor,this.tick2time]);
 				this.time1+=p.dt*this.tick2time;
-				this.timestack.push([this.time1,p.t,this.tick2time]);
+				if(p.i<0)
+					this.timestack.push([this.time1,this.markstart,this.tick2time]);
+				else
+					this.timestack.push([this.time1,p.t1,this.tick2time]);
 				this.timer=setInterval(Interval.bind(this),25);
 			},
 			stop:function(){
 				if(this.timer)
 					clearInterval(this.timer);
 				this.timer=null;
-			},
-			time2Tick(t){
-
 			},
 			setMMLString:function(s){
 				this.sequence=[];
@@ -378,12 +376,15 @@
 				ht.m="s";
 				return ht;
 			},
-			addNote:function(t,n,g){
+			addNote:function(t,n,g,v,f){
 				if(t>=0 && n>=0 && n<128){
-					this.sequence.push({t:t,n:n,g:g});
+					var ev={t:t,c:0x90,n:n,g:g,v:v,f:f};
+					this.sequence.push(ev);
 					this.sortSequence();
 					this.redraw();
+					return ev;
 				}
+				return null;
 			},
 			delNote:function(idx){
 				this.sequence.splice(idx,1);
@@ -406,7 +407,7 @@
 							ev.g=t-ev.t;
 						}
 						else if(t>ev.t && t+g<ev.t+ev.g){
-							this.sequence.push({t:t+g,g:ev.t+ev.g-t-g,n:ev.n,f:0});
+							this.addNote(t+g,ev.n,ev.t+ev.g-t-g,this.defvelo);
 							ev.g=t-ev.t;
 						}
 					}
@@ -497,10 +498,10 @@
 					this.dragging={o:"G",m:"0"};
 				}
 				else if(ht.m=="s"&&ht.t>=0){
-					var px=Math.floor(ht.t);
+					var pt=Math.floor(ht.t);
 					if(this.editmode=="gridmono")
-						this.delAreaNote(px,1);
-					this.addNote(px,ht.n|0,1);
+						this.delAreaNote(pt,1);
+					this.addNote(pt,ht.n|0,1,this.defvelo);
 					this.dragging={o:"G",m:"1"};
 				}
 			},
@@ -513,7 +514,7 @@
 						if(ht.m=="s"){
 							if(this.editmode=="gridmono")
 								this.delAreaNote(px,1);
-							this.addNote(px,ht.n|0,1);
+							this.addNote(px,ht.n|0,1,this.defvelo);
 						}
 						break;
 					case "0":
@@ -536,13 +537,15 @@
 				this.canvas.addEventListener('mouseover',this.pointerover.bind(this),false);
 				this.canvas.addEventListener('mouseout',this.pointerout.bind(this),false);
 				this.ctx=this.$['wac-pianoroll'].getContext("2d");
-				this.playcursorimg=this.$['wac-playcursor'];
+				this.cursorimg=this.$['wac-cursor'];
 				this.markstartimg=this.$['wac-markstart'];
 				this.markendimg=this.$['wac-markend'];
 				this.markendimg.addEventListener("mousedown",this.pointerdown.bind(this),false);
 				this.markendimg.addEventListener('mousemove', this.pointermove.bind(this),false);
 				this.markstartimg.addEventListener("mousedown",this.pointerdown.bind(this),false);
 				this.markstartimg.addEventListener('mousemove', this.pointermove.bind(this),false);
+				this.cursorimg.addEventListener("mousedown",this.pointerdown.bind(this),false);
+				this.cursorimg.addEventListener("mousemove",this.pointermove.bind(this),false);
 				this.kbimg=this.$['wac-kb'];
 				this.sequence=[];
 				this.dragging={o:null};
@@ -592,14 +595,19 @@
 				window.addEventListener('touchcancel', this.boundCancel, true);
 				document.body.addEventListener('touchstart',this.preventScroll);
 				var pos=this.getPos(e);
-				if(e.target==this.markendimg){
+				switch(e.target){
+				case this.markendimg:
 					this.dragging={o:"E",x:pos.x,m:this.markend};
 					e.preventDefault();
 					e.stopPropagation();
 					return false;
-				}
-				if(e.target==this.markstartimg){
+				case this.markstartimg:
 					this.dragging={o:"S",x:pos.x,m:this.markstart};
+					e.preventDefault();
+					e.stopPropagation();
+					return false;
+				case this.cursorimg:
+					this.dragging={o:"P",x:pos.x,m:this.cursor};
 					e.preventDefault();
 					e.stopPropagation();
 					return false;
@@ -647,6 +655,9 @@
 					if(this.markend<=p)
 						this.markend=p+1;
 					this.markstart=p;
+					break;
+				case "P":
+					this.cursor=Math.max(0,(this.dragging.m+(pos.x-this.dragging.x)/this.stepw+.5)|0);
 					break;
 				}
 				switch(this.editmode){
@@ -723,8 +734,8 @@
 			redrawMarker: function(){
 				if(!this.initialized)
 					return;
-				var cur=(this.curpos-this.xoffset)*this.stepw+this.yruler+this.kbwidth;
-				this.playcursorimg.style.left=(cur+this.playcursoroffset)+"px";
+				var cur=(this.cursor-this.xoffset)*this.stepw+this.yruler+this.kbwidth;
+				this.cursorimg.style.left=(cur+this.cursoroffset)+"px";
 				var start=(this.markstart-this.xoffset)*this.stepw+this.yruler+this.kbwidth;
 				this.markstartimg.style.left=(start+this.markstartoffset)+"px";
 				var end=(this.markend-this.xoffset)*this.stepw+this.yruler+this.kbwidth;
