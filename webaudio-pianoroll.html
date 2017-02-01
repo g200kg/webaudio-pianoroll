@@ -100,54 +100,12 @@
 				var i;
 				for(i=0;i<this.sequence.length;++i){
 					var nev=this.sequence[i];
-					if(nev.t>=tick){
-						return {t1:tick,t2:nev.t,dt:nev.t-tick,i:i-1};
-					}
+					if(nev.t>=this.markend)
+						return {t1:tick,n2:this.markend,dt:this.markend-tick,i:-1};
+					if(nev.t>=tick)
+						return {t1:tick,t2:nev.t,dt:nev.t-tick,i:i};
 				}
-				return {t1:0,t2:0,dt:0,i:-1};
-			},
-			locate:function(tick){
-				this.nextEv=this.findNextEv(tick);
-			},
-			nextEvent: function(tick,seq){
-				this.t0=tick;
-				for(var i=0;i<seq.length;++i){
-					var nev=seq[i];
-					if(nev.t>=tick){
-						this.t1=nev.t;
-						this.dt=nev.t-tick;
-						this.i=i;
-						break;
-					}
-				}
-				this.next=function(){
-					this.i++;
-					this.t0=this.t1;
-					if(this.i>=seq.length){
-						this.i=-1;
-						return;
-					}
-					else{
-						this.t1=seq[this.i].t;
-						this.dt=this.t1-this.t0;
-					}
-				};
-			},
-			locatePlay:function(tick){
-				return;
-				var e=this.findNextEv(tick);
-				if(e==null){
-					this.index1=-1;
-					this.time0=this.time1=this.actx.currentTime;
-					this.tick0=this.tick1=tick;
-				}
-				else{
-					this.index1=e.i;
-					this.tick1=this.tick0+e.dt;
-					if(!this.tick2time)
-						this.tick2time=1;
-					this.time1=this.time0+e.dt*this.tick2time;
-				}
+				return {t1:tick,t2:this.markend,dt:this.markend-tick,i:-1};
 			},
 			play:function(actx,playcallback){
 				function Interval(){
@@ -160,35 +118,39 @@
 					if(this.curpos>=this.markend){
 						if(!this.loop)
 							this.stop();
-						else{
-							this.locatePlay(this.markstart);
+						else
 							this.timestack.push([this.time1,this.markstart,this.tick2time]);
-						}
 					}
-					if(this.sequence.length>0){
-						while(current+this.preload>=this.time1){
-							this.time0=this.time1;
-							this.tick0=this.tick1;
-							++this.index1;
-							var e=this.sequence[this.index1];
+					while(current+this.preload>=this.time1){
+						this.time0=this.time1;
+						this.tick0=this.tick1;
+						var e=this.sequence[this.index1];
+						if(!e || e.t>=this.markend){
+							if(this.markend>this.tick0){
+								this.time1+=(this.markend-this.tick0)*this.tick2time;
+								this.tick1=this.markstart;
+								this.timestack.push([this.time1,this.markstart,this.tick2time]);
+							}
+							var p=this.findNextEv(this.markstart);
+							this.index1=p.i;
+						}
+						else{
+							this.tick1=e.t;
+							this.timestack.push([this.time1,e.t,this.tick2time]);
+							var gmax=Math.min(e.t+e.g,this.markend)-e.t;
+							var cbev={t:this.time1,g:this.time1+gmax*this.tick2time,n:e.n};
+							if(this.playcallback)
+								this.playcallback(cbev);
+							e=this.sequence[++this.index1];
 							if(!e || e.t>=this.markend){
-								if(this.markend>this.tick0){
-									this.time1+=(this.markend-this.tick0)*this.tick2time;
-									this.tick1=this.markstart;
-									this.timestack.push([this.time1,this.markstart,this.tick2time]);
-								}
+								this.time1+=(this.markend-this.tick1)*this.tick2time;
 								var p=this.findNextEv(this.markstart);
+								this.timestack.push([this.time1,this.markstart,this.tick2time]);
+								this.time1+=p.dt*this.tick2time;
 								this.index1=p.i;
 							}
-							else{
-								this.tick1=e.t;
-								this.time1+=(this.tick1-this.tick0)*this.tick2time;
-								this.timestack.push([this.time1,e.t,this.tick2time]);
-								var gmax=Math.min(e.t+e.g,this.markend)-e.t;
-								var cbev={t:this.time1,g:this.time1+gmax*this.tick2time,n:e.n};
-								if(this.playcallback)
-									this.playcallback(cbev);
-							}
+							else
+								this.time1+=(e.t-this.tick1)*this.tick2time;
 						}
 					}
 				}
@@ -197,15 +159,15 @@
 				this.actx=actx;
 				this.playcallback=playcallback;
 				this.timestack=[];
-				this.time0=this.time1=this.actx.currentTime+.0;
+				this.time0=this.time1=this.actx.currentTime+0.1;
 				this.tick0=this.tick1=this.markstart;
-				this.index1=-1;
 				this.tick2time=4*60/this.tempo/this.timebase;
 				var p=this.findNextEv(this.markstart);
 				this.index1=p.i;
-				this.time1+=p.dt*this.tick2time;
 				this.timestack.push([0,this.markstart,0]);
-				this.timestack.push([this.time1,this.markstart,this.tick2time]);
+				this.timestack.push([this.time0,this.markstart,this.tick2time]);
+				this.time1+=p.dt*this.tick2time;
+				this.timestack.push([this.time1,p.t,this.tick2time]);
 				this.timer=setInterval(Interval.bind(this),25);
 			},
 			stop:function(){
