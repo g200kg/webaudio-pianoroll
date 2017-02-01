@@ -69,17 +69,17 @@ body{
 <script>
 timebase=480;
 actx=new AudioContext();
-osc=actx.createOscillator();
-gain=actx.createGain();
-gain.gain.value=0;
-osc.type="sawtooth";
-osc.start();
-osc.connect(gain).connect(actx.destination);
 
 function Callback(ev){
-	osc.detune.setValueAtTime((ev.n-69)*100,ev.t);
-	gain.gain.setTargetAtTime(0.5,ev.t,0.005);
-	gain.gain.setTargetAtTime(0,ev.g,0.1);
+	var o=actx.createOscillator();
+	var g=actx.createGain();
+	o.detune.value=(ev.n-69)*100;
+	g.gain.value=0;
+	o.start(actx.currentTime);
+	g.gain.setTargetAtTime(0.2,ev.t,0.005);
+	g.gain.setTargetAtTime(0,ev.g,0.1);
+	o.connect(g);
+	g.connect(actx.destination);
 }
 function Play(){
 	document.getElementById("proll").play(actx,Callback);
@@ -103,7 +103,7 @@ function Layout(k){
 </script>
 </head>
 <body>
-<h1>webaudio-pianoroll Live Demo3</h1>
+<h1>webaudio-pianoroll timebase=480 "dragpoly" mode Live Demo</h1>
 <hr/>
 <h3><a href="https://github.com/g200kg/webaudio-pianoroll">GitHub Respository</a></h3>
 <h3><a href="./index2.html">Other samples</a></h3>
