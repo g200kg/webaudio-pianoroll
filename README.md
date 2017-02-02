@@ -12,8 +12,8 @@ Using webaudio-pianoroll with webaudio-controls makes it easy to build webaudio 
 * Play support - `webaudio-pianoroll` has not direct sound generation function, but has play support function.
 
 Live Demo page is available.  
-'gridmono' mode demo : [Live Demo](./index.html)  
-'dragpoly' timebase=480 mode demo : [Live Demo](./index3.html)  
+'gridmono' mode demo : [Live Demo](https://g200kg.github.io/webaudio-pianoroll/)  
+'dragpoly' timebase=480 mode demo : [Live Demo](https://g200kg.github.io/webaudio-pianoroll/index3.html)  
 
 ---
 ## Usage
