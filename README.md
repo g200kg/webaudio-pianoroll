@@ -18,18 +18,26 @@ Live Demo page is available.
 ---
 ## Usage
 
-- Install Polymer
-> Use command 'bower install --save Polymer/polymer', if you use bower. Or download zipped file and deploy appropriately.
+- Install Polymer and webaudio-pianoroll
+>   **webaudio-pianoroll** is a polymer module. You should prepare polymer related library first.
+ >  
+ >  If you know **bower**, use the command `bower install g200kg/webaudio-pianoroll`. This command prepares polymer and webaudio-pianoroll under your current folder.  
+ >  Otherwise,  download zipped file and deploy appropriately. All necessary files are included in this repository.
 
 - load webcomponents.js and polymer in your HTML  
-> &lt;script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"&gt;&lt;/script&gt;<br/>
-  &lt;link rel="import" href="bower_components/polymer/polymer.html"&gt;
+> `&lt;script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"&gt;&lt;/script&gt;<br/>
+  &lt;link rel="import" href="bower_components/polymer/polymer.html"&gt;`
 
-- load `webaudio-pianoroll` in your HTML  
-> &lt;link rel="import" href="bower_components/webaudio-pianoroll/webaudio-pianoroll.html" &gt;
+- load webaudio-pianoroll in your HTML  
+> `&lt;link rel="import" href="bower_components/webaudio-pianoroll/webaudio-pianoroll.html" &gt;`
+> * (if you use bower, webaudio-pianoroll.html is placed to `bower_components/webaudio-pianoroll/` folder, otherwise specify path to webaudio-pianoroll.html)
 
-- insert `webaudio-pianoroll` element
-> &lt;webaudio-pianoroll&gt;&lt;/webaudio-pianoroll&gt;  
+- place webaudio-pianoroll element
+> `&lt;webaudio-pianoroll&gt;&lt;/webaudio-pianoroll&gt;`  
+> Indefault, it makes element like this:
+![](./images/screenshot1.png)
+Then you can customize the pianoroll with attributes. For example, `&lt;webaudio-pianoroll width="300" height="200" xrange="64"&gt;&lt;/webaudio-pianoroll&gt;`  
+![](./images/screenshot2.png)
 
 ## Attributes
 
