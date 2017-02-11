@@ -44,7 +44,9 @@ Live Demo page is available.
  `<webaudio-pianoroll width="300" height="200" xrange="64" markend="64" collt="#33f" coldk="#338" editmode="dragmono"></webaudio-pianoroll>
 `  
 
- ![](./images/screenshot2.png)
+ ![](./images/screenshot2.png)  
+
+
 ## How To Operate
 
 #### Common
