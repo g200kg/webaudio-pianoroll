@@ -50,7 +50,7 @@ Live Demo page is available.
 ## How To Operate
 
 #### Common
-* Time axis can be zoomed by Mouse wheel if enabled by a "wheelzoom" attribute.
+* Time axis can be zoomed by mouse wheel if enabled by a "wheelzoom" attribute.
 
 #### Grid Mode
 * The cell can be toggle on/off by clicking.
@@ -59,7 +59,7 @@ Live Demo page is available.
 #### Drag mode
 * Drag with the left button to create a specified length note.
 * Click existing note to select.
-* Drag with the right button to select notes within the specified area.
+* Drag with the right button to select notes within the specified area (Whether the note is included in the range or not is determined based on whether or not the beginning of the note is included).
 * Selected notes can be moved by left button dragging.
 * Drag the left or right edge of the selected note to change the length of the note.
 * Right click on the selected note to delete menu.
