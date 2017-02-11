@@ -73,6 +73,7 @@ actx=new AudioContext();
 function Callback(ev){
 	var o=actx.createOscillator();
 	var g=actx.createGain();
+	o.type="sawtooth";
 	o.detune.value=(ev.n-69)*100;
 	g.gain.value=0;
 	o.start(actx.currentTime);
@@ -116,7 +117,9 @@ function Layout(k){
 		xrange="960"
 		yrange="22"
 		markend="960"
-		grid="120" editmode="dragpoly"
+		grid="120"
+		wheelzoom="1"
+		editmode="dragpoly"
 		></webaudio-pianoroll>
 
 <webaudio-slider onchange="Layout(this)" id="xrange" direction="horizontal" min="1" max="10" value="2"></webaudio-slider>

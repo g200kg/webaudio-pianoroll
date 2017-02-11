@@ -21,7 +21,8 @@ Live Demo page is available.
 * #### Install Polymer and webaudio-pianoroll  
    **webaudio-pianoroll** is a polymer module. You should prepare polymer related library first.
 
-  If you know **bower**, use the command `bower install g200kg/webaudio-pianoroll`. This command prepares polymer and webaudio-pianoroll under your current folder.  
+  If you know **bower**, use the command `> bower install g200kg/webaudio-pianoroll`.  
+  This command prepares polymer and webaudio-pianoroll under your current folder.  
   Otherwise,  download zipped file and deploy appropriately. All necessary files are included in this repository.
 
 * #### load webcomponents.js and polymer in your HTML  
@@ -44,6 +45,22 @@ Live Demo page is available.
 `  
 
  ![](./images/screenshot2.png)
+## How To Operate
+
+#### Common
+* Time axis can be zoomed by Mouse wheel if enabled by a "wheelzoom" attribute.
+
+#### Grid Mode
+* The cell can be toggle on/off by clicking.
+* When dragging, you can turn on or off multiple cells depending on the state of the first cell.
+
+#### Drag mode
+* Drag with the left button to create a specified length note.
+* Click existing note to select.
+* Drag with the right button to select notes within the specified area.
+* Selected notes can be moved by left button dragging.
+* Drag the left or right edge of the selected note to change the length of the note.
+* Right click on the selected note to delete menu.
 
 ## Attributes
 
@@ -58,6 +75,8 @@ Live Demo page is available.
 |**xoffset**  |Number |0         | time axis offset in tick|
 |**yoffset**  |Number |60        | y axis offset in note number|
 |**grid**     |Number |4         | time axis grid density in tick|
+|**snap**     |Number |1         | note x position snapping in tick|
+|**wheelzoom**|Number |0         | if non 0, time axis zoom by wheel is enabled|
 |**xruler**   |Number |24        | time axis ruler height in px|
 |**yruler**   |Number |24        | y axis ruler width in px|
 |**octadj**   |Number |-1        | ruler octave value adjust <br/>(-1 : 60=C4)|

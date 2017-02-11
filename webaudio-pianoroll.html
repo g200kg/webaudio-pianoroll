@@ -6,6 +6,7 @@
 			<img id="wac-markstart" class="marker" src="{{markstartsrc}}"/>
 			<img id="wac-markend" class="marker" src="{{markendsrc}}"/>
 			<img id="wac-cursor" class="marker" src="{{cursorsrc}}"/>
+			<div id="wac-menu">Delete</div>
 		</div>
 		<style>
 			:host {
@@ -32,6 +33,18 @@
 				height: 100%;
 				background-size:100% calc(100%*12/16);
 				background-position:left bottom;
+			}
+			#wac-menu {
+				display:none;
+				position:absolute;
+				top:0px;
+				left:0px;
+				background:#eef;
+				color:#000;
+				padding:2px 10px;
+				border:1px solid #66f;
+				border-radius: 4px;
+				cursor:pointer;
 			}
 			.marker{
 				position: absolute;
@@ -64,7 +77,9 @@
 				yrange:			{type:Number, value:16, observer:'layout'},
 				xoffset:		{type:Number, value:0, observer:'layout'},
 				yoffset:		{type:Number, value:60, observer:'layout'},
-				grid:				{type:Number, value:4},
+				grid:				{type:Number, value:1},
+				snap:				{type:Number, value:4},
+				wheelzoom:	{type:Number, value:0},
 				xruler:			{type:Number, value:24, observer:'layout'},
 				yruler:			{type:Number, value:24, observer:'layout'},
 				octadj:			{type:Number, value:-1},
@@ -78,9 +93,11 @@
 				colnote:		{type:String, value:"#f22"},
 				colnotesel:	{type:String, value:"#0f0"},
 				colnoteborder:	{type:String, value:"#000"},
+				colnoteselborder:	{type:String, value:"#fff"},
 				colrulerbg:	{type:String, value:"#666"},
 				colrulerfg:	{type:String, value:"#fff"},
 				colrulerborder:	{type:String, value:"#000"},
+				colselarea: {type:String, value:"rgba(0,0,0,0.3)"},
 				bgsrc:			{type:String, value:null, observer:'layout'},
 				cursorsrc: {type:String, value:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIj4NCjxwYXRoIGZpbGw9InJnYmEoMjU1LDEwMCwxMDAsMC44KSIgZD0iTTAsMSAyNCwxMiAwLDIzIHoiLz4NCjwvc3ZnPg0K"},
 				cursoroffset:{type:Number, value:0},
@@ -337,6 +354,10 @@
 				var i;
 				var ht={t:0,n:0,i:-1,m:" "};
 				var l=this.sequence.length;
+				if(pos.t==this.menu){
+					ht.m="m";
+					return ht;
+				}
 				ht.t=(this.xoffset+(pos.x-this.yruler-this.kbwidth)/this.swidth*this.xrange);
 				ht.n=this.yoffset-(pos.y-this.height)/this.steph;
 				if(pos.y>=this.height || pos.x>=this.width){
@@ -354,12 +375,12 @@
 					var ev=this.sequence[i];
 					if((ht.n|0)==ev.n){
 						if(ev.f && Math.abs(ev.t-ht.t)*this.stepw<8){
-							ht.m="b";
+							ht.m="B";
 							ht.i=i;
 							return ht;
 						}
 						if(ev.f && Math.abs(ev.t+ev.g-ht.t)*this.stepw<8){
-							ht.m="e";
+							ht.m="E";
 							ht.i=i;
 							return ht;
 						}
@@ -385,6 +406,20 @@
 					return ev;
 				}
 				return null;
+			},
+			selAreaNote: function(t1,t2,n1,n2){
+				var t,i=0,e=this.sequence[i];
+				if(n1>n2)
+					t=n1,n1=n2,n2=t;
+				if(t1>t2)
+					t=t1,t1=t2,t2=t;
+				while(e){
+					if(e.t>=t1 && e.t<t2 && e.n>=n1 && e.n <= n2)
+						e.f=1;
+					else
+						e.f=0;
+					e=this.sequence[++i];
+				}
 			},
 			delNote:function(idx){
 				this.sequence.splice(idx,1);
@@ -421,6 +456,21 @@
 						this.sequence.splice(i,1);
 				}
 			},
+			moveSelectedNote:function(dt,dn){
+				var ev,i,l=this.sequence.length;
+				for(i=0;i<l;++i){
+					ev=this.sequence[i];
+					if(ev.f && ev.ot+dt<0)
+						dt=-ev.ot;
+				}
+				for(i=0,l=this.sequence.length;i<l;++i){
+					var ev=this.sequence[i];
+					if(ev.f){
+						ev.t=(((ev.ot+dt)/this.snap+.5)|0)*this.snap;
+						ev.n=ev.on+dn;
+					}
+				}
+			},
 			clearSel:function(){
 				var i;
 				var l=this.sequence.length;
@@ -432,7 +482,12 @@
 				var ht=this.hitTest(pos);
 				if(ht.m=="N"){
 					var ev=this.sequence[ht.i];
-					this.dragging={o:"D",m:"N",i:ht.i,x:ht.t-ev.t};
+					this.dragging={o:"D",m:"N",i:ht.i,t:ev.t,n:ev.n,dt:ht.t-ev.t};
+					for(var i=0,l=this.sequence.length;i<l;++i){
+						var ev=this.sequence[i];
+						if(ev.f)
+							ev.on=ev.n, ev.ot=ev.t, ev.og=ev.g;
+					}
 					this.redraw();
 				}
 				else if(ht.m=="n"){
@@ -441,17 +496,18 @@
 					ev.f=1;
 					this.redraw();
 				}
-				else if(ht.m=="e"){
-					this.dragging={o:"D",m:"e",i:ht.i};
+				else if(ht.m=="E"){
+					this.dragging={o:"D",m:"E",i:ht.i};
 				}
-				else if(ht.m=="b"){
-					this.dragging={o:"D",m:"b",i:ht.i};
+				else if(ht.m=="B"){
+					this.dragging={o:"D",m:"B",i:ht.i};
 				}
 				else if(ht.m=="s"&&ht.t>=0){
 					this.clearSel();
-					this.sequence.push({t:ht.t|0, n:ht.n|0, g:1, f:1});
+					var t=((ht.t/this.snap+0.5)|0)*this.snap;
+					this.sequence.push({t:t, n:ht.n|0, g:1, f:1});
 					this.redraw();
-					this.dragging={o:"D",m:"e",i:this.sequence.length-1};
+					this.dragging={o:"D",m:"E",i:this.sequence.length-1};
 				}
 			},
 			editDragMove:function(pos){
@@ -459,33 +515,32 @@
 				var ev,t;
 				if(this.dragging.o=="D"){
 					switch(this.dragging.m){
-					case "e":
+					case "E":
 						ev=this.sequence[this.dragging.i];
-						t=Math.max(0,ht.t);
-						ev.g=(t|0)-ev.t+1;
+						t=((Math.max(0,ht.t)/this.snap+0.5)|0)*this.snap;
+						ev.g=t-ev.t+1;
 						if(ev.g<0){
 							ev.t+=ev.g;
 							ev.g=-ev.g;
-							this.dragging.m="b";
+							this.dragging.m="B";
 						}
 						this.redraw();
 						break;
-					case "b":
+					case "B":
 						ev=this.sequence[this.dragging.i];
-						t=Math.max(0,ht.t)|0;
+						t=((Math.max(0,ht.t)/this.snap+0.5)|0)*this.snap;
 						ev.g=ev.t+ev.g-t;
 						ev.t=t;
 						if(ev.g<0){
 							ev.t+=ev.g;
 							ev.g=-ev.g;
-							this.dragging.m="e";
+							this.dragging.m="E";
 						}
 						this.redraw();
 						break;
 					case "N":
 						ev=this.sequence[this.dragging.i];
-						ev.n=ht.n|0;
-						ev.t=Math.max(0,ht.t-this.dragging.x)|0;
+						this.moveSelectedNote((ht.t-(this.dragging.t+this.dragging.dt))|0,(ht.n-this.dragging.n)|0);
 						this.redraw();
 						break;
 					}
@@ -524,28 +579,33 @@
 					}
 				}
 			},
+			setListener(el,mode){
+				el.addEventListener("mousedown",this.pointerdown.bind(this),false);
+				el.addEventListener("mousemove",this.pointermove.bind(this),false);
+				el.addEventListener("mouseup",this.cancel.bind(this),false);
+				el.addEventListener("touchstart",this.pointerdown.bind(this),false);
+				el.addEventListener("contextmenu",this.contextmenu.bind(this),false);
+				if(mode){
+					el.addEventListener("mouseover",this.pointerover.bind(this),false);
+					el.addEventListener("mouseout",this.pointerout.bind(this),false);
+				}
+			},
 			ready:function(){
 				var body = this.$['wac-body'];
 				this.canvas = this.$['wac-pianoroll'];
 				this.canvas.addEventListener('keydown',this.keydown.bind(this),false);
-				this.canvas.addEventListener('contextmenu',this.contextmenu.bind(this),false);
 				this.canvas.addEventListener('DOMMouseScroll',this.wheel.bind(this),false);
 				this.canvas.addEventListener('mousewheel',this.wheel.bind(this),false);
-				this.canvas.addEventListener('mousedown',this.pointerdown.bind(this),false);
-				this.canvas.addEventListener('touchstart',this.pointerdown.bind(this),false);
-				this.canvas.addEventListener('mousemove', this.pointermove.bind(this),false);
-				this.canvas.addEventListener('mouseover',this.pointerover.bind(this),false);
-				this.canvas.addEventListener('mouseout',this.pointerout.bind(this),false);
+				this.setListener(this.canvas,true);
 				this.ctx=this.$['wac-pianoroll'].getContext("2d");
 				this.cursorimg=this.$['wac-cursor'];
 				this.markstartimg=this.$['wac-markstart'];
 				this.markendimg=this.$['wac-markend'];
-				this.markendimg.addEventListener("mousedown",this.pointerdown.bind(this),false);
-				this.markendimg.addEventListener('mousemove', this.pointermove.bind(this),false);
-				this.markstartimg.addEventListener("mousedown",this.pointerdown.bind(this),false);
-				this.markstartimg.addEventListener('mousemove', this.pointermove.bind(this),false);
-				this.cursorimg.addEventListener("mousedown",this.pointerdown.bind(this),false);
-				this.cursorimg.addEventListener("mousemove",this.pointermove.bind(this),false);
+				this.menu=this.$['wac-menu'];
+				this.setListener(this.markendimg,true);
+				this.setListener(this.markstartimg,true);
+				this.setListener(this.cursorimg,true);
+				this.setListener(this.menu,false);
 				this.kbimg=this.$['wac-kb'];
 				this.sequence=[];
 				this.dragging={o:null};
@@ -564,12 +624,23 @@
 			},
 			getPos: function(e){
 				return {
+					t:e.target,
 					x:e.clientX-this.rcTarget.left,
 					y:e.clientY-this.rcTarget.top,
 				};
 			},
 			contextmenu: function(e){
-				this.delSelectedNote();
+				e.preventDefault();
+				return false;
+				var pos=this.getPos(e);
+				var ht=this.hitTest(pos);
+				switch(ht.m){
+				case "N":
+				case "E":
+				case "B":
+					this.delSelectedNote();
+					break;
+				}
 				this.redraw();
 				e.preventDefault();
 			},
@@ -581,6 +652,12 @@
 					break;
 				}
 			},
+			popMenu: function(pos){
+				var s=this.menu.style;
+				s.display="block";
+				s.top=(pos.y+2)+"px";
+				s.left=pos.x+"px";
+			},
 			pointerdown: function(e) {
 				if(!this.enable)
 					return;
@@ -589,12 +666,32 @@
 				this.rcTarget=this.canvas.getBoundingClientRect();
 				this.boundPointermove = this.pointermove.bind(this);
 				this.boundCancel = this.cancel.bind(this);
-				window.addEventListener('touchmove', this.boundPointermove, true);
-				window.addEventListener('mouseup', this.boundCancel, true);
-				window.addEventListener('touchend', this.boundCancel, true);
-				window.addEventListener('touchcancel', this.boundCancel, true);
+//				window.addEventListener('touchmove', this.boundPointermove, true);
+//				window.addEventListener('mouseup', this.boundCancel, true);
+//				window.addEventListener('touchend', this.boundCancel, true);
+//				window.addEventListener('touchcancel', this.boundCancel, true);
 				document.body.addEventListener('touchstart',this.preventScroll);
 				var pos=this.getPos(e);
+				var ht=this.hitTest(pos);
+				if(e.button==2){
+					switch(ht.m){
+					case "N":
+					case "B":
+					case "E":
+						this.popMenu(pos);
+						this.dragging={o:"m"};
+
+//						this.dragging={o:"A",p:pos,p2:pos,t1:ht.t,n1:ht.n};
+						break;
+					default:
+						this.dragging={o:"A",p:pos,p2:pos,t1:ht.t,n1:ht.n};
+						break;
+					}
+					e.preventDefault();
+					e.stopPropagation();
+					this.canvas.focus();
+					return false;
+				}
 				switch(e.target){
 				case this.markendimg:
 					this.dragging={o:"E",x:pos.x,m:this.markend};
@@ -633,16 +730,30 @@
 				if(e.touches)
 					e = e.touches[0];
 				var pos=this.getPos(e);
+				var ht=this.hitTest(pos);
 				switch(this.dragging.o){
 				case null:
-					var ht=this.hitTest(pos);
 					switch(ht.m){
-					case "e": this.canvas.style.cursor="e-resize"; break;
-					case "b": this.canvas.style.cursor="w-resize"; break;
+					case "E": this.canvas.style.cursor="e-resize"; break;
+					case "B": this.canvas.style.cursor="w-resize"; break;
 					case "N": this.canvas.style.cursor="move"; break;
 					case "n": this.canvas.style.cursor="pointer"; break;
 					case "s": this.canvas.style.cursor="pointer"; break;
 					}
+					break;
+				case "m":
+					if(ht.m=="m"){
+						this.menu.style.background="#ff6";
+					}
+					else {
+						this.menu.style.background="#eef";
+					}
+					break;
+				case "A":
+					this.dragging.p2=pos;
+					this.dragging.t2=ht.t;
+					this.dragging.n2=ht.n;
+					this.redraw();
 					break;
 				case "E":
 					var p=Math.max(1,(this.dragging.m+(pos.x-this.dragging.x)/this.stepw+.5)|0);
@@ -676,6 +787,16 @@
 			},
 			cancel: function(e) {
 				var pos=this.getPos(e);
+				if(this.dragging.o=="m"){
+					this.menu.style.display="none";
+					this.delSelectedNote();
+					this.redraw();
+				}
+				if(this.dragging.o=="A"){
+					this.selAreaNote(this.dragging.t1,this.dragging.t2,this.dragging.n1,this.dragging.n2);
+					this.dragging={o:null};
+					this.redraw();
+				}
 				if(this.dragging.o=="D"){
 					var ev=this.sequence[this.dragging.i];
 					if(this.editmode=="dragmono")
@@ -687,11 +808,14 @@
 					this.sortSequence();
 				}
 				this.press = 0;
-				window.removeEventListener('touchmove', this.boundPointermove, true);
-				window.removeEventListener('mouseup', this.boundCancel, true);
-				window.removeEventListener('touchend', this.boundCancel, true);
-				window.removeEventListener('touchcancel', this.boundCancel, true);
+//				window.removeEventListener('touchmove', this.boundPointermove, true);
+//				window.removeEventListener('mouseup', this.boundCancel, true);
+//				window.removeEventListener('touchend', this.boundCancel, true);
+//				window.removeEventListener('touchcancel', this.boundCancel, true);
 				document.body.removeEventListener('touchstart',this.preventScroll,false);
+				e.preventDefault();
+				e.stopPropagation();
+				return false;
 			},
 			pointerover: function(e) {
 			},
@@ -699,17 +823,24 @@
 			},
 			wheel: function(e) {
 				var delta = 0;
+				var pos=this.getPos(e);
 				if(!e)
 					e = window.event;
 				if(e.wheelDelta)
 					delta = e.wheelDelta/120;
 				else if(e.detail)
 					delta = -e.detail/3;
-				if(e.shiftKey)
-					delta *= 0.2;
-				delta *= (this.max - this.min) * 0.05;
-				if(Math.abs(delta) < this.step)
-					delta = (delta>0)?this.step:-this.step;
+				if(this.wheelzoom){
+					var ht=this.hitTest(pos);
+					if(delta>0){
+						this.xoffset=ht.t-(ht.t-this.xoffset)/1.2
+						this.xrange/=1.2;
+					}
+					else{
+						this.xoffset=ht.t-(ht.t-this.xoffset)*1.2
+						this.xrange*=1.2;
+					}
+				}
 				e.preventDefault();
 			},
 			layout: function(){
@@ -829,6 +960,12 @@
 					this.ctx.fillRect(this.yruler,this.xruler,1,this.sheight);
 				}
 			},
+			redrawAreaSel:function(){
+				if(this.dragging && this.dragging.o=="A"){
+					this.ctx.fillStyle=this.colselarea;
+					this.ctx.fillRect(this.dragging.p.x,this.dragging.p.y,this.dragging.p2.x-this.dragging.p.x,this.dragging.p2.y-this.dragging.p.y);
+				}
+			},
 			redraw: function() {
 				var s,t,x,w,y,x2,y2;
 				if(!this.ctx)
@@ -851,7 +988,10 @@
 					y=this.height - (ev.n-this.yoffset)*this.steph;
 					y2=(y-this.steph)|0; y|=0;
 					this.ctx.fillRect(x,y,x2-x,y2-y);
-					this.ctx.fillStyle=this.colnoteborder;
+					if(ev.f)
+						this.ctx.fillStyle=this.colnoteselborder;
+					else
+						this.ctx.fillStyle=this.colnoteborder;
 					this.ctx.fillRect(x,y,1,y2-y);
 					this.ctx.fillRect(x2,y,1,y2-y);
 					this.ctx.fillRect(x,y,x2-x,1);
@@ -860,6 +1000,7 @@
 				this.redrawYRuler();
 				this.redrawXRuler();
 				this.redrawMarker();
+				this.redrawAreaSel();
 			}
 	});
 	</script>
