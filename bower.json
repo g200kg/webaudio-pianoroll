@@ -15,6 +15,5 @@
     "tests"
   ],
   "dependencies": {
-    "webaudio-controls": "g200kg/webaudio-controls"
   }
 }

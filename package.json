@@ -1,0 +1,23 @@
+{
+  "name": "webaudio-pianoroll",
+  "version": "0.6.0",
+  "description": "Pianoroll GUI library for Web application / relevant to webaudio-controls",
+  "keywords": ["pianoroll", "gui"],
+  "main": "webaudio-pianoroll.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/g200kg/webaudio-pianoroll.git"
+  },
+  "author": {
+    "name": "Tatsuya Shinyagaito",
+    "url": "https://www.g200kg.com"
+  },
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/g200kg/webaudio-pianoroll/issues"
+  },
+  "homepage": "https://github.com/g200kg/webaudio-pianoroll#readme"
+}
