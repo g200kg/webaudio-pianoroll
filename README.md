@@ -12,8 +12,8 @@ Using webaudio-pianoroll with webaudio-controls makes it easy to build webaudio 
 * Play support - `webaudio-pianoroll` has not direct sound generation function, but has play support function.
 
 Live Demo page is available.  
-'gridmono' mode demo : [Live Demo](https://g200kg.github.io/webaudio-pianoroll/)  
-'dragpoly' timebase=480 mode demo : [Live Demo](https://g200kg.github.io/webaudio-pianoroll/index3.html)  
+### [Live Demo : 'gridmono' mode](https://g200kg.github.io/webaudio-pianoroll/)
+###  [Live Demo : 'dragpoly' timebase=480 mode](https://g200kg.github.io/webaudio-pianoroll/index3.html)  
 
 ----
 ## Usage
@@ -31,13 +31,13 @@ Live Demo page is available.
   And load the `webaudio-pianoroll.js` :  
   `<script src="https://g200kg.github.io/webaudio-pianoroll/webaudio-pianoroll.js"></script>`
   
-  Or, directory load from GitHub as CDN.  
+  Or, just directory load from GitHub pages as CDN.  
   `<script src="https://g200kg.github.io/webaudio-pianoroll/webaudio-pianoroll.js"></script>`
 
 * #### If needed, load webcomponents.js in your HTML.  
-`<script src="./webcomponents-lite.min.js"></script>`  
+`<script src="webcomponents-lite.min.js"></script>`  
 
-* #### place webaudio-pianoroll element
+* #### place webaudio-pianoroll element in your HTML
  `<webaudio-pianoroll></webaudio-pianoroll>`  
 
  In default, it makes element like this:  
