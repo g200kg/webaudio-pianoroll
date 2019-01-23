@@ -32,7 +32,7 @@ Live Demo page is available.
   `<script src="https://g200kg.github.io/webaudio-pianoroll/webaudio-pianoroll.js"></script>`
   
   Or, directory load from GitHub as CDN.  
-  `&lt;script src="https://g200kg.github.io/webaudio-pianoroll/webaudio-pianoroll.js"&gt;&lt;/script&gt;
+  `<script src="https://g200kg.github.io/webaudio-pianoroll/webaudio-pianoroll.js"></script>`
 
 * #### If needed, load webcomponents.js in your HTML.  
 `<script src="./webcomponents-lite.min.js"></script>`  
