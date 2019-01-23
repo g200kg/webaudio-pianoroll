@@ -1,13 +1,13 @@
 # webaudio-pianoroll
-[Polymer] Pianoroll GUI library for Web application / relevant to webaudio-controls
+Pianoroll GUI library for Web application / relevant to webaudio-controls
 
-`webaudio-pianoroll` is a Polymer GUI module for pianoroll.
+`webaudio-pianoroll` is a GUI library for pianoroll.
 Using webaudio-pianoroll with webaudio-controls makes it easy to build webaudio application.
 
 `webaudio-controls` is here :  
 [webaudio-controls](https://github.com/g200kg/webaudio-controls)
 
-* Editmode - `webaudio-pianoroll` has four edit mode, `gridmono`, `gridpoly`, `dragmono` and `dragpoly`. `grid` types are just toggle the grid cell by clicking, and the note length is always 1 tick. that matches to rhythm machine like one. The other hand, `drag` types can specify note length by dragging. that are matches generic pianoroll apps.
+* Editmode - `webaudio-pianoroll` has four edit mode, `gridmono`, `gridpoly`, `dragmono` and `dragpoly`. `grid` types are just toggle the grid cell by clicking, and the note length is always 1 tick. `grid` types matche to rhythm machine like app. The other hand, `drag` types can specify note length by dragging. that are matches generic pianoroll apps.
 * Many customize options.
 * Play support - `webaudio-pianoroll` has not direct sound generation function, but has play support function.
 
@@ -18,26 +18,29 @@ Live Demo page is available.
 ----
 ## Usage
 
-* #### Install Polymer and webaudio-pianoroll  
-   **webaudio-pianoroll** is a polymer module. You should prepare polymer related library first.
+### The previous version was a module of Polymer, but now it is a normal JavaScript library using WebCompnents API.
+
+### Since webaudio-pianoroll uses only the functionality of WebComponents CustomElements, it works without webcomponents polyfill in Chrome and Firefox.
+
+* #### Install webaudio-pianoroll  
 
   If you know **bower**, use the command `> bower install g200kg/webaudio-pianoroll`.  
-  This command prepares polymer and webaudio-pianoroll under your current folder.  
-  Otherwise,  download zipped file and deploy appropriately. All necessary files are included in this repository.
+  This command prepares webaudio-pianoroll under your current folder.  
+  Otherwise,  download zipped file and deploy appropriately. necessary file is `webaudio-pianoroll.js`.   
+    
+  And load the `webaudio-pianoroll.js` :  
+  `<script src="https://g200kg.github.io/webaudio-pianoroll/webaudio-pianoroll.js"></script>`
+  
+  Or, directory load from GitHub as CDN.  
+  `&lt;script src="https://g200kg.github.io/webaudio-pianoroll/webaudio-pianoroll.js"&gt;&lt;/script&gt;
 
-* #### load webcomponents.js and polymer in your HTML  
-`<script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>`  
-  `<link rel="import" href="bower_components/polymer/polymer.html">`
-
-* #### load webaudio-pianoroll in your HTML  
- `<link rel="import" href="bower_components/webaudio-pianoroll/webaudio-pianoroll.html">`  
-
-  if you use bower, webaudio-pianoroll.html is placed to `bower_components/webaudio-pianoroll/` folder, otherwise specify path to webaudio-pianoroll.html
+* #### If needed, load webcomponents.js in your HTML.  
+`<script src="./webcomponents-lite.min.js"></script>`  
 
 * #### place webaudio-pianoroll element
  `<webaudio-pianoroll></webaudio-pianoroll>`  
 
- Indefault, it makes element like this:  
+ In default, it makes element like this:  
 ![](./images/screenshot1.png)  
 
   Then you can customize the pianoroll with attributes. For example,  

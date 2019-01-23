@@ -62,10 +62,7 @@ body{
 	display:inline-block;
 }
 </style>
-<script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
-<link rel="import" href="bower_components/polymer/polymer.html">
-<link rel="import" href="bower_components/webaudio-controls/webaudio-controls.html" >
-<link rel="import" href="webaudio-pianoroll.html" >
+<script src="./webaudio-pianoroll.js"></script>
 <script>
 timebase=480;
 actx=new AudioContext();
@@ -83,6 +80,7 @@ function Callback(ev){
 	g.connect(actx.destination);
 }
 function Play(){
+	actx.resume();
 	document.getElementById("proll").play(actx,Callback);
 }
 function Layout(k){

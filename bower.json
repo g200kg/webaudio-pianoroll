@@ -5,7 +5,7 @@
     "Tatsuya Shinyagaito <gaito@g200kg.com>"
   ],
   "description": "",
-  "main": "webaudio-pianoroll.html",
+  "main": "webaudio-pianoroll.js",
   "license": "Apache 2.0",
   "ignore": [
     "**/.*",
@@ -15,7 +15,6 @@
     "tests"
   ],
   "dependencies": {
-    "polymer": "Polymer/polymer#^1.7.1",
     "webaudio-controls": "g200kg/webaudio-controls"
   }
 }
