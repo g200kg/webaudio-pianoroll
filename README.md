@@ -49,7 +49,6 @@ Live Demo page is available.
 
  ![](./images/screenshot2.png)  
 
-
 ## How To Operate
 
 #### Common
