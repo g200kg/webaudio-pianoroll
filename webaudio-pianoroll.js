@@ -19,9 +19,9 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
     }
     connectedCallback(){
         let root;
-        if(this.attachShadow)
-          root=this.attachShadow({mode: 'open'});
-        else
+//        if(this.attachShadow)
+//          root=this.attachShadow({mode: 'open'});
+//        else
           root=this;
         this.module = {
             is:"webaudio-pianoroll",
