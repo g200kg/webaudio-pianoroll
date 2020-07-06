@@ -19,7 +19,10 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
     }
     connectedCallback(){
         let root;
-        root = this;
+        if(this.attachShadow)
+          root=this.attachShadow({mode: 'open'});
+        else
+          root=this;
         this.module = {
             is:"webaudio-pianoroll",
             properties:{
@@ -36,6 +39,8 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                 wheelzoom:          {type:Number, value:0},
                 wheelzoomx:         {type:Number, value:0},
                 wheelzoomy:         {type:Number, value:0},
+                scrollx:            {type:Number, value:0},
+                scrolly:            {type:Number, value:0},
                 gridnoteratio:      {type:Number, value:0.5, observer:'updateTimer'},
                 xruler:             {type:Number, value:24, observer:'layout'},
                 yruler:             {type:Number, value:24, observer:'layout'},
@@ -766,6 +771,7 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                 e.stopPropagation();
                 return false;
             }
+            this.dragging={o:null,x:pos.x,y:pos.y,offsx:this.xoffset,offsy:this.yoffset};
             this.canvas.focus();
             switch(this.editmode){
             case "gridpoly":
@@ -804,6 +810,10 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
             const ht=this.hitTest(pos);
             switch(this.dragging.o){
             case null:
+                if(this.scrollx)
+                    this.xoffset=this.dragging.offsx+(this.dragging.x-pos.x)*(this.xrange/this.width);
+                if(this.scrolly)
+                    this.yoffset=this.dragging.offsy+(pos.y-this.dragging.y)*(this.yrange/this.height);
                 break;
             case "m":
                 if(ht.m=="m"){
