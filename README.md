@@ -1,11 +1,5 @@
 # webaudio-pianoroll
-Pianoroll GUI library for Web application / relevant to webaudio-controls
-
-`webaudio-pianoroll` is a GUI library for pianoroll.
-Using webaudio-pianoroll with webaudio-controls makes it easy to build webaudio application.
-
-`webaudio-controls` is here :  
-[webaudio-controls](https://github.com/g200kg/webaudio-controls)
+**webaudio-pianoroll** is a GUI library for displaying piano rolls used in music applications.
 
 * Editmode - `webaudio-pianoroll` has four edit mode, `gridmono`, `gridpoly`, `dragmono` and `dragpoly`. `grid` types are just toggle the grid cell by clicking, and the note length is always 1 tick. `grid` types matche to rhythm machine like app. The other hand, `drag` types can specify note length by dragging. that are matches generic pianoroll apps.
 * Many customize options.
@@ -18,26 +12,20 @@ Live Demo page is available.
 ----
 ## Usage
 
-### The previous version was a module of Polymer, but now it is a normal JavaScript library using WebCompnents API.
-
-### Since webaudio-pianoroll uses only the functionality of WebComponents CustomElements, it works without webcomponents polyfill in Chrome and Firefox.
-
 * #### Install webaudio-pianoroll  
 
-  If you know **bower**, use the command `> bower install g200kg/webaudio-pianoroll`.  
-  This command prepares webaudio-pianoroll under your current folder.  
-  Otherwise,  download zipped file and deploy appropriately. necessary file is `webaudio-pianoroll.js`.   
+Deploy `webaudio-pianoroll.js` appropriately. necessary file is only `webaudio-pianoroll.js`.   
     
-  And load the `webaudio-pianoroll.js` :  
-  `<script src="https://g200kg.github.io/webaudio-pianoroll/webaudio-pianoroll.js"></script>`
+Load the `webaudio-pianoroll.js` :  
+  `<script src="./webaudio-pianoroll.js"></script>`
   
   Or, just directory load from GitHub pages as CDN.  
   `<script src="https://g200kg.github.io/webaudio-pianoroll/webaudio-pianoroll.js"></script>`
 
-* #### If needed, load webcomponents.js in your HTML.  
+* #### If needed, load webcomponents.js in your HTML:  
 `<script src="webcomponents-lite.min.js"></script>`  
 
-* #### place webaudio-pianoroll element in your HTML
+* #### place webaudio-pianoroll element in your HTML:
  `<webaudio-pianoroll></webaudio-pianoroll>`  
 
  In default, it makes element like this:  
@@ -78,6 +66,8 @@ Live Demo page is available.
 |**yrange**    |Number |16        | y axis view range in note number|
 |**xoffset**   |Number |0         | time axis offset in tick|
 |**yoffset**   |Number |60        | y axis offset in note number|
+|**xscroll**   |Number |0         | if 1, x axis scroll enable|
+|**yscroll**   |Number |0         | if 1, y axis scroll enable|
 |**grid**      |Number |4         | time axis grid density in tick|
 |**snap**      |Number |1         | note x position snapping in tick|
 |**wheelzoom** |Number |0         | if non 0, time axis zoom by wheel is enabled|
@@ -119,6 +109,7 @@ Live Demo page is available.
 |**setMMLString(str)**| set MML string to webaudio-pianoroll. <br/>Note that this function is for `mono` type editmode.|
 |**locate(tick)**| set cursor to specified tick|
 |**play(audioContext, callback, starttick)**|play current data. `webaudio-pianoroll` does not generate sound directly, but it passes necessary information to the specified callback function. `audioContext` is used to control the time axis. If `starttick` is not specified, play from current cursor position.|
+|**stop()**|stop playing.|
 
 ## Callback
 play() function passes necessary data for playing to callback function like :
