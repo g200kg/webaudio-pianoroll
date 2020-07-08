@@ -694,7 +694,8 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
         this.setupImage=function(){
         };
         this.preventScroll=function(e){
-            e.preventDefault();
+            if(e.preventDefault)
+                e.preventDefault();
         };
         this.getPos=function(e){
             return {
@@ -784,8 +785,10 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                 break;
             }
             this.press = 1;
-            e.preventDefault();
-            e.stopPropagation();
+            if(e.preventDefault)
+                e.preventDefault();
+            if(e.stopPropagation)
+                e.stopPropagation();
             return false;
         };
         this.mousemove=function(e){
@@ -940,7 +943,8 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                 return;
             const proll = this.proll;
             const bodystyle = this.body.style;
-            proll.style.background="url('"+this.bgsrc+"')";
+            if(this.bgsrc)
+                proll.style.background="url('"+this.bgsrc+"')";
             this.kbimg.style.background="url('"+this.kbsrc+"')";
             if(this.width){
                 proll.width = this.width;
