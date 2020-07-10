@@ -116,7 +116,13 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
     padding:2px 10px;
     border:1px solid #66f;
     border-radius: 4px;
+    line-height:60px;
+    text-align:center;
     cursor:pointer;
+    width:120px;
+    height:60px;
+    font-size:30px;
+    font-family: sans-serif;
 }
 .marker{
     position: absolute;
@@ -141,7 +147,7 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
 <img id="wac-markstart" class="marker" src="${this.markstartsrc}"/>
 <img id="wac-markend" class="marker" src="${this.markendsrc}"/>
 <img id="wac-cursor" class="marker" src="${this.cursorsrc}"/>
-<div id="wac-menu">Delete</div>
+<div id="wac-menu">Del</div>
 </div>`;
 
         this.sortSequence=function(){
@@ -523,6 +529,13 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
         this.editDragDown=function(pos){
             const ht=this.hitTest(pos);
             let ev;
+            if(ht.m=="n"){
+                ev=this.sequence[ht.i];
+                this.clearSel();
+                ev.f=1;
+                ht.m="N";
+                this.redraw();
+            }
             if(ht.m=="N"){
                 ev=this.sequence[ht.i];
                 this.dragging={o:"D",m:"N",i:ht.i,t:ht.t,n:ev.n,dt:ht.t-ev.t};
@@ -531,12 +544,6 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                     if(ev.f)
                         ev.on=ev.n, ev.ot=ev.t, ev.og=ev.g;
                 }
-                this.redraw();
-            }
-            else if(ht.m=="n"){
-                ev=this.sequence[ht.i];
-                this.clearSel();
-                ev.f=1;
                 this.redraw();
             }
             else if(ht.m=="E"){
@@ -656,7 +663,6 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
             this.bindcancel = this.cancel.bind(this);
             el.addEventListener("mousedown",this.pointerdown.bind(this),true);
             el.addEventListener("touchstart",this.pointerdown.bind(this),false);
-//            el.addEventListener("contextmenu",this.bindcontextmenu,false);
             if(mode){
                 el.addEventListener("mouseover",this.pointerover.bind(this),false);
                 el.addEventListener("mouseout",this.pointerout.bind(this),false);
@@ -674,6 +680,9 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
             this.markendimg=this.elem.children[3];
             this.cursorimg=this.elem.children[4];
             this.menu=this.elem.children[5];
+            this.rcMenu={x:0, y:0, width:0, height:0};
+            this.lastx=0;
+            this.lasty=0;
             this.canvas.addEventListener('mousemove',this.mousemove.bind(this),false);
             this.canvas.addEventListener('keydown',this.keydown.bind(this),false);
             this.canvas.addEventListener('DOMMouseScroll',this.wheel.bind(this),false);
@@ -698,11 +707,16 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                 e.preventDefault();
         };
         this.getPos=function(e){
-            return {
-                t:e.target,
-                x:e.clientX-this.rcTarget.left,
-                y:e.clientY-this.rcTarget.top,
-            };
+            let t=null;
+            if(e){
+                t=e.target;
+                this.lastx=e.clientX-this.rcTarget.left;
+                this.lasty=e.clientY-this.rcTarget.top;
+            }
+            if(this.lastx>=this.rcMenu.x&&this.lastx<this.rcMenu.x+this.rcMenu.width
+                    &&this.lasty>=this.rcMenu.y&&this.lasty<this.rcMenu.y+this.rcMenu.height)
+                t=this.menu;
+            return {t:t, x:this.lastx, y:this.lasty};
         };
         this.contextmenu= function(e){
             e.stopPropagation();
@@ -721,74 +735,95 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
         this.popMenu=function(pos){
             const s=this.menu.style;
             s.display="block";
-            s.top=(pos.y+8)+"px";
-            s.left=(pos.x+8)+"px";
+            s.top=(pos.y-100)+"px";
+            s.left=(pos.x-80)+"px";
+            this.rcMenu=this.menu.getBoundingClientRect();
         };
-        this.pointerdown=function(e) {
-            if(!this.enable)
-                return;
-            if(e.touches)
-                e = e.touches[0];
-            this.rcTarget=this.canvas.getBoundingClientRect();
-            window.addEventListener('touchstart',this.preventScroll);
-            window.addEventListener("mousemove",this.bindpointermove,false);
-            window.addEventListener("mouseup",this.bindcancel);
-            window.addEventListener("contextmenu",this.bindcontextmenu);
-
-            const pos=this.getPos(e);
-            const ht=this.hitTest(pos);
-            if(e.button==2||e.ctrlKey){
-                switch(ht.m){
+        this.longtapcountup=function(){
+            if(++this.longtapcount >= 18){
+                clearInterval(this.longtaptimer);
+                switch(this.downht.m){
                 case "N":
                 case "B":
                 case "E":
-                    this.popMenu(pos);
+                    this.popMenu(this.downpos);
+                    this.dragging={o:"m"};
+                    break;
+                }
+            }
+        };
+        this.pointerdown=function(ev) {
+            let e;
+            if(!this.enable)
+                return;
+            if(ev.touches)
+                e = ev.touches[0];
+            else
+                e = ev;
+            this.rcTarget=this.canvas.getBoundingClientRect();
+            this.downpos=this.getPos(e);
+            this.downht=this.hitTest(this.downpos);
+
+            this.longtapcount = 0;
+            this.longtaptimer = setInterval(this.longtapcountup.bind(this),100);
+            window.addEventListener("touchmove", this.bindpointermove,false);
+            window.addEventListener("mousemove",this.bindpointermove,false);
+            window.addEventListener("touchend",this.bindcancel);
+            window.addEventListener("mouseup",this.bindcancel);
+            window.addEventListener("contextmenu",this.bindcontextmenu);
+
+            if(e.button==2||e.ctrlKey){
+                switch(this.downht.m){
+                case "N":
+                case "B":
+                case "E":
+                    this.popMenu(this.downpos);
                     this.dragging={o:"m"};
                     break;
                 default:
                     if(this.editmode=="dragmono"||this.editmode=="dragpoly")
-                        this.dragging={o:"A",p:pos,p2:pos,t1:ht.t,n1:ht.n};
+                        this.dragging={o:"A",p:this.downpos,p2:this.downpos,t1:this.downht.t,n1:this.downht.n};
                     break;
                 }
-                e.preventDefault();
-                e.stopPropagation();
+                ev.preventDefault();
+                ev.stopPropagation();
                 this.canvas.focus();
                 return false;
             }
             switch(e.target){
             case this.markendimg:
-                this.dragging={o:"E",x:pos.x,m:this.markend};
-                e.preventDefault();
-                e.stopPropagation();
+                this.dragging={o:"E",x:this.downpos.x,m:this.markend};
+                ev.preventDefault();
+                ev.stopPropagation();
                 return false;
             case this.markstartimg:
-                this.dragging={o:"S",x:pos.x,m:this.markstart};
-                e.preventDefault();
-                e.stopPropagation();
+                this.dragging={o:"S",x:this.downpos.x,m:this.markstart};
+                ev.preventDefault();
+                ev.stopPropagation();
                 return false;
             case this.cursorimg:
-                this.dragging={o:"P",x:pos.x,m:this.cursor};
-                e.preventDefault();
-                e.stopPropagation();
+                this.dragging={o:"P",x:this.downpos.x,m:this.cursor};
+                ev.preventDefault();
+                ev.stopPropagation();
                 return false;
             }
-            this.dragging={o:null,x:pos.x,y:pos.y,offsx:this.xoffset,offsy:this.yoffset};
+            this.dragging={o:null,x:this.downpos.x,y:this.downpos.y,offsx:this.xoffset,offsy:this.yoffset};
             this.canvas.focus();
             switch(this.editmode){
             case "gridpoly":
             case "gridmono":
-                this.editGridDown(pos);
+                this.editGridDown(this.downpos);
                 break;
             case "dragpoly":
             case "dragmono":
-                this.editDragDown(pos);
+                this.editDragDown(this.downpos);
                 break;
             }
             this.press = 1;
-            if(e.preventDefault)
-                e.preventDefault();
-            if(e.stopPropagation)
-                e.stopPropagation();
+            if(ev.preventDefault)
+                ev.preventDefault();
+            if(ev.stopPropagation)
+                ev.stopPropagation();
             return false;
         };
         this.mousemove=function(e){
@@ -805,12 +840,17 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                     }
                 }
         };
-        this.pointermove=function(e) {
+        this.pointermove=function(ev) {
+            let e;
             this.rcTarget=this.canvas.getBoundingClientRect();
-            if(e.touches)
-                e = e.touches[0];
+            if(ev.touches)
+                e = ev.touches[0];
+            else
+                e = ev;
             const pos=this.getPos(e);
             const ht=this.hitTest(pos);
+            if(this.longtaptimer && (Math.abs(pos.x-this.downpos.x)>10 || Math.abs(pos.y-this.downpos.y)>10))
+                clearInterval(this.longtaptimer);
             switch(this.dragging.o){
             case null:
                 if(this.xscroll)
@@ -858,14 +898,22 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                 this.editDragMove(pos);
                 break;
             }
-            e.preventDefault();
-            e.stopPropagation();
+//            ev.preventDefault();
+            ev.stopPropagation();
             return false;
         };
-        this.cancel= function(e) {
+        this.cancel= function(ev) {
+            let e;
+            if(ev.touches)
+                e = null;
+            else
+                e = ev;
+            if(this.longtaptimer)
+                clearInterval(this.longtaptimer);
             const pos=this.getPos(e);
             if(this.dragging.o=="m"){
                 this.menu.style.display="none";
+                this.rcMenu={x:0,y:0,width:0,height:0};
                 if(pos.t==this.menu)
                     this.delSelectedNote();
                 this.redraw();
@@ -891,12 +939,13 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                 this.sortSequence();
             }
             this.press = 0;
-            this.mousemove(e);
+//            this.mousemove(e);
             window.removeEventListener('touchstart',this.preventScroll,false);
             window.removeEventListener("mousemove",this.bindpointermove,false);
+            window.removeEventListener("touchend",this.bindcancel,false);
             window.removeEventListener("mouseup",this.bindcancel,false);
-            e.preventDefault();
-            e.stopPropagation();
+            ev.preventDefault();
+            ev.stopPropagation();
 //            window.removeEventListener("contextmenu",this.contextmenu);
             return false;
         };
