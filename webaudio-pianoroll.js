@@ -116,13 +116,7 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
     padding:2px 10px;
     border:1px solid #66f;
     border-radius: 4px;
-    line-height:60px;
-    text-align:center;
     cursor:pointer;
-    width:120px;
-    height:60px;
-    font-size:30px;
-    font-family: sans-serif;
 }
 .marker{
     position: absolute;
@@ -147,7 +141,7 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
 <img id="wac-markstart" class="marker" src="${this.markstartsrc}"/>
 <img id="wac-markend" class="marker" src="${this.markendsrc}"/>
 <img id="wac-cursor" class="marker" src="${this.cursorsrc}"/>
-<div id="wac-menu">Del</div>
+<div id="wac-menu">Delete</div>
 </div>`;
 
         this.sortSequence=function(){
@@ -529,13 +523,6 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
         this.editDragDown=function(pos){
             const ht=this.hitTest(pos);
             let ev;
-            if(ht.m=="n"){
-                ev=this.sequence[ht.i];
-                this.clearSel();
-                ev.f=1;
-                ht.m="N";
-                this.redraw();
-            }
             if(ht.m=="N"){
                 ev=this.sequence[ht.i];
                 this.dragging={o:"D",m:"N",i:ht.i,t:ht.t,n:ev.n,dt:ht.t-ev.t};
@@ -544,6 +531,12 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                     if(ev.f)
                         ev.on=ev.n, ev.ot=ev.t, ev.og=ev.g;
                 }
+                this.redraw();
+            }
+            else if(ht.m=="n"){
+                ev=this.sequence[ht.i];
+                this.clearSel();
+                ev.f=1;
                 this.redraw();
             }
             else if(ht.m=="E"){
@@ -735,8 +728,8 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
         this.popMenu=function(pos){
             const s=this.menu.style;
             s.display="block";
-            s.top=(pos.y-100)+"px";
-            s.left=(pos.x-80)+"px";
+            s.top=(pos.y+8)+"px";
+            s.left=(pos.x+8)+"px";
             this.rcMenu=this.menu.getBoundingClientRect();
         };
         this.longtapcountup=function(){
@@ -847,10 +840,10 @@ customElements.define("webaudio-pianoroll", class Pianoroll extends HTMLElement 
                 e = ev.touches[0];
             else
                 e = ev;
+            if(this.longtaptimer)
+                clearInterval(this.longtaptimer);
             const pos=this.getPos(e);
             const ht=this.hitTest(pos);
-            if(this.longtaptimer && (Math.abs(pos.x-this.downpos.x)>10 || Math.abs(pos.y-this.downpos.y)>10))
-                clearInterval(this.longtaptimer);
             switch(this.dragging.o){
             case null:
                 if(this.xscroll)
