@@ -112,10 +112,10 @@ function Layout(k){
 <div id="base">
 <webaudio-pianoroll id="proll" width="800" height="320"></webaudio-pianoroll>
 
-<webaudio-slider oninput="Layout(this)" id="xrange" direction="horz" min="1" max="10" value="1"></webaudio-slider>
-<webaudio-slider oninput="Layout(this)" id="xoffset" direction="horz" width="200" min="0" max="20" step="0.01" value="0"></webaudio-slider>
-<webaudio-slider oninput="Layout(this)" id="yrange" min="3" max="32" value="16"></webaudio-slider>
-<webaudio-slider oninput="Layout(this)" id="yoffset" min="30" max="120" height="200" value="60"></webaudio-slider>
+<webaudio-slider oninput="Layout(this)" id="xrange" direction="horz" width="120" height="24" min="1" max="10" value="1"></webaudio-slider>
+<webaudio-slider oninput="Layout(this)" id="xoffset" direction="horz" width="200" height="24" min="0" max="20" step="0.01" value="0"></webaudio-slider>
+<webaudio-slider oninput="Layout(this)" id="yrange" direction="vert" width="24" height="120" min="3" max="32" value="16"></webaudio-slider>
+<webaudio-slider oninput="Layout(this)" id="yoffset" direction="vert" width="24" height="200" min="30" max="120" height="200" value="60"></webaudio-slider>
 </div>
 <button onclick="document.getElementById('mml').value=(document.getElementById('proll').getMMLString())">getMMLString</button>
 <button onclick="document.getElementById('proll').setMMLString(document.getElementById('mml').value)">setMMLString</button>
